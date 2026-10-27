@@ -25,7 +25,7 @@ The binaries are unsigned. Check the download source and SHA-256 checksum. See
 [SECURITY.md](SECURITY.md) and the included offline [User guide](User%20guide.html).
 
 Example: create three treatments with four replicates and four animals per pen.
-Prepare housing 101–112 and print labels. Import at least 48 IDs/weights, generate
+Prepare housing 101â€“112 and print labels. Import at least 48 IDs/weights, generate
 an allocation, inspect unit mean BW and export. The default pool favors the heaviest
 required animals and records unused animals as EX. History retains earlier results.
 
@@ -103,10 +103,12 @@ Affiliations supplied by the author: Purdue University; The Ohio State Universit
 [ORCID: 0000-0002-0747-2866](https://orcid.org/0000-0002-0747-2866).
 See [CITATION.cff](CITATION.cff) for machine-readable citation metadata.
 
-**Zenodo DOI: pending approved public release and archival.**
-<!-- DOI badge placeholder: after archival, replace with Zenodo's real version DOI
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.REPLACE.svg)](https://doi.org/10.5281/zenodo.REPLACE)
-Do not use a fabricated or placeholder DOI in CITATION.cff. -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23698896.svg)](https://doi.org/10.5281/zenodo.23698896)
+
+[Version 1.1.2 DOI](https://doi.org/10.5281/zenodo.23698896) ·
+[All versions (concept DOI)](https://doi.org/10.5281/zenodo.23698895).
+The Zenodo record archives the released source; the Windows installer/portable ZIP
+is available from [GitHub Releases](https://github.com/EhemAi/experiment-designer-app/releases/tag/v1.1.2).
 
 ## Contribute, security and license
 
