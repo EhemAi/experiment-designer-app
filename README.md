@@ -1,5 +1,17 @@
 # Experiment Designer
 
+## Download for Windows
+
+**[Download Experiment Designer v1.1.2 for Windows (64-bit, 77 MB)](https://github.com/EhemAi/experiment-designer-app/releases/download/v1.1.2/Experiment-Designer-1.1.2-win-x64.zip)**
+
+Ready to run. No GitHub account, coding tools, or separate .NET installation needed.
+
+1. Download and extract the **entire ZIP**.
+2. Open `Setup/ExperimentDesigner.Setup.exe` to install, or
+   `App/ExperimentDesigner.exe` to run without installing.
+
+[Installation details](#install-and-use) · [All releases and checksums](https://github.com/EhemAi/experiment-designer-app/releases)
+
 Experiment Designer 1.1.2 is a Windows desktop application for reproducible animal
 allocation in poultry, swine and other livestock trials. Researchers can prepare
 pen or cage labels before animals arrive, import animal IDs and body weights,
