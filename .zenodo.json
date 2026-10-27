@@ -1,0 +1,18 @@
+{
+  "title": "Experiment Designer",
+  "upload_type": "software",
+  "description": "A Windows desktop application for reproducible animal allocation in livestock trials. Supports prepared pen and cage layouts, seeded allocation, body-weight balance review, immutable allocation history, and Excel and printable reports.",
+  "creators": [
+    {
+      "name": "Alagbe, Emmanuel O.",
+      "affiliation": "Purdue University; The Ohio State University",
+      "orcid": "0000-0002-0747-2866"
+    }
+  ],
+  "license": "mit",
+  "version": "1.1.2",
+  "keywords": ["animal nutrition", "livestock", "experimental design", "decision support", "randomization", "reproducible research"],
+  "related_identifiers": [
+    {"identifier": "https://github.com/EhemAi/experiment-designer-app", "relation": "isSupplementTo", "scheme": "url"}
+  ]
+}

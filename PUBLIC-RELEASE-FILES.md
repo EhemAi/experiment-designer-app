@@ -1,0 +1,94 @@
+# Public-release file manifest
+
+Files changed relative to the last private source commit include the already tested v1.1.1/v1.1.2 corrections and whitespace formatting. The public source snapshot intentionally has fresh history; private artifacts and old verification notes are excluded.
+
+## Updated files
+
+- .gitignore
+- PACKAGE-README.txt
+- README.md
+- RELEASE-NOTES.md
+- Section 5 - Windows interface.md
+- Section 7 - Distribution and user guide.md
+- User guide.html
+- build-package.ps1
+- global.json
+- src/PoultryDesigner.AppCore/AllocationReports.cs
+- src/PoultryDesigner.AppCore/LayoutReports.cs
+- src/PoultryDesigner.AppCore/PoultryDesigner.AppCore.csproj
+- src/PoultryDesigner.AppCore/ReportExport.cs
+- src/PoultryDesigner.Desktop/AnimalEntryDialog.cs
+- src/PoultryDesigner.Desktop/Brand.cs
+- src/PoultryDesigner.Desktop/Components.cs
+- src/PoultryDesigner.Desktop/DesktopSmoke.cs
+- src/PoultryDesigner.Desktop/EditDialogs.cs
+- src/PoultryDesigner.Desktop/ImportDialog.cs
+- src/PoultryDesigner.Desktop/MainForm.AllocationLayout.cs
+- src/PoultryDesigner.Desktop/MainForm.AnimalLayout.cs
+- src/PoultryDesigner.Desktop/MainForm.AnimalPagingChecks.cs
+- src/PoultryDesigner.Desktop/MainForm.Animals.cs
+- src/PoultryDesigner.Desktop/MainForm.HistoryLayout.cs
+- src/PoultryDesigner.Desktop/MainForm.Housing.cs
+- src/PoultryDesigner.Desktop/MainForm.Layout.cs
+- src/PoultryDesigner.Desktop/MainForm.Presentation.cs
+- src/PoultryDesigner.Desktop/MainForm.ReviewChecks.cs
+- src/PoultryDesigner.Desktop/MainForm.Study.cs
+- src/PoultryDesigner.Desktop/MainForm.Validation.cs
+- src/PoultryDesigner.Desktop/MainForm.cs
+- src/PoultryDesigner.Desktop/PagedGrid.cs
+- src/PoultryDesigner.Desktop/Pagination.cs
+- src/PoultryDesigner.Desktop/PoultryDesigner.Desktop.csproj
+- src/PoultryDesigner.Desktop/Program.cs
+- src/PoultryDesigner.Desktop/RedesignChecks.cs
+- src/PoultryDesigner.Desktop/ReportDialog.cs
+- src/PoultryDesigner.Desktop/ReportPrinting.cs
+- src/PoultryDesigner.Desktop/Theme.cs
+- src/PoultryDesigner.Desktop/Ui.cs
+- src/PoultryDesigner.Engine/PoultryDesigner.Engine.csproj
+- src/PoultryDesigner.Engine/ProjectStore.cs
+- src/PoultryDesigner.Setup/PoultryDesigner.Setup.csproj
+- src/PoultryDesigner.Setup/Program.cs
+- src/PoultryDesigner.Setup/WindowsIntegration.cs
+- tests/PoultryDesigner.Checks/AnovaChecks.cs
+- tests/PoultryDesigner.Checks/AutomaticPoolChecks.cs
+- tests/PoultryDesigner.Checks/HousingChecks.cs
+- tests/PoultryDesigner.Checks/Program.cs
+- tests/PoultryDesigner.Checks/Section4Checks.cs
+- tests/PoultryDesigner.Checks/Section5Checks.cs
+- tests/PoultryDesigner.Checks/Section6Checks.cs
+- tests/PoultryDesigner.Checks/Section7Checks.cs
+
+## Added files
+
+- .editorconfig
+- .env.example
+- .gitattributes
+- .github/dependabot.yml
+- .github/requirements/requirements.txt
+- .github/workflows/checks.yml
+- .github/workflows/codeql.yml
+- .github/workflows/security.yml
+- .zenodo.json
+- CHANGELOG.md
+- CITATION.cff
+- CODE_OF_CONDUCT.md
+- CONTRIBUTING.md
+- Directory.Build.props
+- LICENSE
+- PUBLIC-RELEASE-AUDIT.md
+- PUBLIC-RELEASE-CHECKLIST.md
+- SECURITY.md
+- THIRD-PARTY-NOTICES.md
+- check-source.ps1
+- docs/screenshots/study.png
+- format-source.ps1
+- releases/v1.1.2.md
+- runtime-version.txt
+- src/PoultryDesigner.AppCore/packages.lock.json
+- src/PoultryDesigner.Desktop/AppearancePreferences.cs
+- src/PoultryDesigner.Desktop/MainForm.CorrectionChecks.cs
+- src/PoultryDesigner.Desktop/packages.lock.json
+- src/PoultryDesigner.Engine/packages.lock.json
+- src/PoultryDesigner.Setup/packages.lock.json
+- tests/PoultryDesigner.Checks/packages.lock.json
+- PUBLIC-RELEASE-FILES.md

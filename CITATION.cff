@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use Experiment Designer in your research, please cite this software."
+type: software
+title: Experiment Designer
+version: 1.1.2
+date-released: '2026-10-27'
+license: MIT
+repository-code: https://github.com/EhemAi/experiment-designer-app
+url: https://github.com/EhemAi/experiment-designer-app
+abstract: >-
+  A Windows desktop application for reproducible animal allocation in livestock
+  trials, with prepared pen and cage layouts, body-weight balance review,
+  immutable allocation history and Excel and printable reports.
+authors:
+  - family-names: Alagbe
+    given-names: Emmanuel O.
+    affiliation: "Purdue University; The Ohio State University"
+    orcid: https://orcid.org/0000-0002-0747-2866
+keywords:
+  - animal nutrition
+  - livestock
+  - experimental design
+  - decision support
+  - randomization
+  - reproducible research

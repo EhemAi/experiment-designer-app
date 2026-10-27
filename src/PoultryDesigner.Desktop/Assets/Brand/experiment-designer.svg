@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Experiment Designer allocation grid">
+  <rect width="256" height="256" rx="55" fill="#0f2f33"/>
+  <g fill="#429e84">
+    <rect x="52" y="52" width="44" height="44" rx="9"/><rect x="106" y="52" width="44" height="44" rx="9"/>
+    <rect x="52" y="106" width="44" height="44" rx="9"/><rect x="160" y="106" width="44" height="44" rx="9"/>
+    <rect x="106" y="160" width="44" height="44" rx="9"/><rect x="160" y="160" width="44" height="44" rx="9"/>
+  </g>
+  <rect x="106" y="106" width="44" height="44" rx="9" fill="#6dcfb3"/>
+  <g fill="#e9f7f1"><rect x="160" y="52" width="44" height="44" rx="9"/><rect x="52" y="160" width="44" height="44" rx="9"/></g>
+</svg>

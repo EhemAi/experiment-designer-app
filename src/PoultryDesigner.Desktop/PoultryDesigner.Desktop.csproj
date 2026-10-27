@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><AssemblyName>ExperimentDesigner</AssemblyName><Version>1.1.2</Version><Product>Experiment Designer</Product><Description>Seeded experimental allocation for livestock trials.</Description></PropertyGroup>
+  <PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors><ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../PoultryDesigner.AppCore/PoultryDesigner.AppCore.csproj" /></ItemGroup>
+  <PropertyGroup><ApplicationIcon>Assets/Brand/experiment-designer.ico</ApplicationIcon></PropertyGroup>
+  <ItemGroup><Content Include="Assets/Fonts/*" CopyToOutputDirectory="PreserveNewest" /><Content Include="Assets/Brand/*" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><Content Include="../../User guide.html" Link="User guide.html" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><Content Include="../../LICENSE" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" /><Content Include="../../THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+</Project>

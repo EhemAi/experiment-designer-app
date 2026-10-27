@@ -1,0 +1,56 @@
+.tools/
+.analysis-tools/
+**/bin/
+**/obj/
+analysis/
+dist/
+*.xlsm
+*.poultryproj
+*.poultryproj.bak
+*reverse-engineering report.md
+Section 1 - Macro validation.md
+Section 2 - Experimental rules.md
+
+# Local credentials, study data, generated media and developer-only notes.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.experimentproj
+*.experimentproj.bak
+*.csv
+*.tsv
+*.xlsx
+data/
+local-data/
+brag-output/
+ui-redesign-concepts/
+UI redesign*.md
+V*-VERIFICATION.md
+!V1.1.0-VERIFICATION.md
+
+# Tool environments and generated outputs.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+node_modules/
+.cache/
+coverage/
+TestResults/
+*.log
+*.tmp
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+Desktop.ini

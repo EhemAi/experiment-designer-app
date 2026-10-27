@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup><Compile Include="../PoultryDesigner.Desktop/AppearancePreferences.cs" Link="AppearancePreferences.cs" /><Compile Include="../PoultryDesigner.Desktop/Components.cs" Link="Components.cs" /><Compile Include="../PoultryDesigner.Desktop/PagedGrid.cs" Link="PagedGrid.cs" /></ItemGroup>
+  <PropertyGroup><AssemblyName>ExperimentDesigner.Setup</AssemblyName><Product>Experiment Designer</Product></PropertyGroup>
+  <ItemGroup><Content Include="../../LICENSE" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" /><Content Include="../../THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <PropertyGroup><ApplicationIcon>../PoultryDesigner.Desktop/Assets/Brand/experiment-designer.ico</ApplicationIcon></PropertyGroup>
+  <ItemGroup><Content Include="../PoultryDesigner.Desktop/Assets/Brand/*" Link="Assets/Brand/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors><ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode><Version>1.1.2</Version></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../PoultryDesigner.AppCore/PoultryDesigner.AppCore.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../PoultryDesigner.Desktop/Theme.cs" Link="Theme.cs" /><Compile Include="../PoultryDesigner.Desktop/Ui.cs" Link="Ui.cs" /><Content Include="../PoultryDesigner.Desktop/Assets/Fonts/*" Link="Assets/Fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+</Project>
