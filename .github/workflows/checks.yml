@@ -15,9 +15,9 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
         with:
           dotnet-version: '10.0.403'
-      - name: Core and native desktop checks
+      - name: Core and controller checks (hosted runner)
         shell: pwsh
-        run: ./build-and-check.ps1
+        run: ./build-and-check.ps1 -SkipDesktop
       - name: Locked restore, compiler analysis and formatting
         shell: pwsh
         run: ./check-source.ps1

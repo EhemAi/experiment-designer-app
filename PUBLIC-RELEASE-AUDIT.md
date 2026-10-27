@@ -100,3 +100,11 @@ Check the release date when approving if publication occurs later.
 
 No GitHub or Zenodo publication has occurred. Final release assets identify the
 reviewed public source revision; verify the SHA-256 sidecar accompanying the ZIP.
+
+## Publication validation update
+
+GitHub-hosted Windows runs the independent core/controller suite and builds/analyzes
+all desktop projects. Its noninteractive desktop has no usable scrolling viewport,
+so native UI smoke checks require a local interactive Windows session and remain
+a release prerequisite. The local 686-check native and installed-package suites passed.
+The maintainer approved publication; this document records the earlier audit stage.

@@ -12,8 +12,7 @@ reports. Prepared treatment locations stay fixed when animal allocation is repea
 
 Download the Windows x64 ZIP and SHA-256 checksum from
 [GitHub Releases](https://github.com/EhemAi/experiment-designer-app/releases).
-The security-prepared public v1.1.2 is pending maintainer approval; older private
-development assets are not its replacement. Extract the complete ZIP first.
+Extract the complete ZIP before running or installing the app.
 
 - Portable: open `App/ExperimentDesigner.exe`.
 - Install/update for your Windows account: open `Setup/ExperimentDesigner.Setup.exe`.
@@ -59,7 +58,9 @@ The custom test executable fails on its first failed assertion. It covers seeded
 allocation, independent mathematics, imports, persistence/replay, prepared housing,
 ANOVA, Excel types, installer boundaries and synthetic native desktop workflows.
 `./build-and-check.ps1 -SkipDesktop` runs core/controller checks alone. Native checks
-need a Windows desktop session; printing depends on installed printer drivers.
+need an interactive Windows desktop session; hosted GitHub runners run the core
+suite and compile/analyze all desktop projects. Full native UI checks are run
+locally before distribution. Printing depends on installed printer drivers.
 Optional private workbook tests may report SKIP; the independent synthetic suite
 does not need them. Logs and synthetic outputs go to ignored `analysis/`.
 
