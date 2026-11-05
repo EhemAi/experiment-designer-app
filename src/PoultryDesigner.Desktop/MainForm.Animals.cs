@@ -19,13 +19,13 @@ internal sealed partial class MainForm
             AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
             SortMode = DataGridViewColumnSortMode.NotSortable
         });
-        foreach (string name in new[] { "Record ID", "Animal ID", "Cohort", "BW (g)", "Old location", "Source row", "Decision", "Reason" })
+        foreach (string name in new[] { "Record ID", "Animal ID", "Cohort", "BW", "Sex", "Old location", "Source row", "Decision", "Reason" })
         {
             DataGridViewColumn column = name == "Decision" ? new DataGridViewButtonColumn { FlatStyle = FlatStyle.Flat } : new DataGridViewTextBoxColumn();
             column.Name = column.HeaderText = column.DataPropertyName = name;
             column.ReadOnly = name != "Reason"; column.SortMode = DataGridViewColumnSortMode.NotSortable;
             column.MinimumWidth = name == "Reason" ? 170 : 75;
-            if (name == "BW (g)") column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            if (name == "BW") column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
             animals.Columns.Add(column);
         }
         ApplyAnimalDetails();
@@ -68,14 +68,14 @@ internal sealed partial class MainForm
         bool previousLoading = loading; loading = true; animals.SuspendLayout();
         try
         {
-            var table = new DataTable(); foreach (string column in new[] { "Record ID", "Animal ID", "Cohort", "BW (g)", "Old location", "Source row", "Decision", "Reason" }) table.Columns.Add(column);
+            var table = new DataTable(); foreach (string column in new[] { "Record ID", "Animal ID", "Cohort", "BW", "Sex", "Old location", "Source row", "Decision", "Reason" }) table.Columns.Add(column);
             var input = Workspace.Inputs; var details = input.Animals.ToDictionary(x => x.RecordId); var apps = input.Imports.ToDictionary(x => x.Id);
             var sourceFiles = Workspace.Document.Sources.ToDictionary(x => x.Id);
             foreach (var a in filteredAnimals.Skip(animalPage * animalRowsPerPage).Take(animalRowsPerPage))
             {
                 var decision = selection[a.RecordId]; var origin = details[a.RecordId].Origin;
                 string sourceRow = origin is null ? "Manual record" : $"{sourceFiles[apps[origin.ApplicationId].SourceId].FileName} / {apps[origin.ApplicationId].Table}:{origin.Row}";
-                table.Rows.Add(a.RecordId, a.AnimalId, a.Cohort, Ui.Number(a.WeightGrams), a.OldLocation, sourceRow, decision.Choice.ToString(), decision.Reason);
+                table.Rows.Add(a.RecordId, a.AnimalId, a.Cohort, Ui.Number(a.WeightGrams), a.Sex.ToString(), a.OldLocation, sourceRow, decision.Choice.ToString(), decision.Reason);
             }
             // Keep the columns and editing controls stable across pages. Removing bound columns
             // during a cell commit can reenter grid events and repeatedly recalculate fill widths.

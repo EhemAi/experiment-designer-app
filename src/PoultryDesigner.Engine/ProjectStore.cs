@@ -19,13 +19,21 @@ public static class ProjectStore
     private static JsonSerializerOptions CreateOptions()
     {
         var resolver = new DefaultJsonTypeInfoResolver();
-        resolver.Modifiers.Add(info => {
+        resolver.Modifiers.Add(info =>
+        {
             if (info.Kind == JsonTypeInfoKind.Object && info.Type.Namespace == typeof(ProjectDocument).Namespace)
                 foreach (var property in info.Properties)
-                    property.IsRequired = !(info.Type == typeof(ProjectInputs) && property.Name is nameof(ProjectInputs.PreparedLayout) or nameof(ProjectInputs.AutomaticPoolSelection));
+                    property.IsRequired = !(info.Type == typeof(ProjectInputs) && property.Name is nameof(ProjectInputs.PreparedLayout) or nameof(ProjectInputs.AutomaticPoolSelection))
+                        && !(info.Type == typeof(Animal) && property.Name == nameof(Animal.Sex))
+                        && !(info.Type == typeof(Study) && property.Name is nameof(Study.SexMode) or nameof(Study.SexSettings) or nameof(Study.CompactCages) or nameof(Study.BalancedBwCages));
         });
-        return new() { UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-            RespectRequiredConstructorParameters = true, MaxDepth = 64, TypeInfoResolver = resolver };
+        return new()
+        {
+            UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+            RespectRequiredConstructorParameters = true,
+            MaxDepth = 64,
+            TypeInfoResolver = resolver
+        };
     }
 
     // Hashes detect accidental corruption. They are not signatures or protection against deliberate rewriting.

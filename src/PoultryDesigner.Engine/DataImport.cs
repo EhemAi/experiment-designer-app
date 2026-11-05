@@ -100,8 +100,12 @@ public static class DataImport
         {
             var entry = archive.GetEntry(name) ?? throw new InvalidDataException($"Missing workbook part {name}.");
             using var part = entry.Open();
-            using var reader = XmlReader.Create(part, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit,
-                XmlResolver = null, MaxCharactersInDocument = MaximumExpandedBytes });
+            using var reader = XmlReader.Create(part, new XmlReaderSettings
+            {
+                DtdProcessing = DtdProcessing.Prohibit,
+                XmlResolver = null,
+                MaxCharactersInDocument = MaximumExpandedBytes
+            });
             return XDocument.Load(reader);
         }
         var book = Xml("xl/workbook.xml");
@@ -205,14 +209,14 @@ public static class DataImport
     }
 
     public static ImportPreview<AnimalImport> Animals(ImportSource source, string table, int header, int first, int last,
-        AnimalColumns columns, string weightUnit = "g", bool demonstration = false, bool allowIntegerIds = false)
+        AnimalColumns columns, string weightUnit = "raw", bool demonstration = false, bool allowIntegerIds = false)
     {
         var mapping = new List<ColumnMapping> { new("AnimalId", columns.Identity), new("Weight", columns.Weight) };
         void Add(string field, int? column) { if (column.HasValue) mapping.Add(new(field, column.Value)); }
         Add("Cohort", columns.Cohort); Add("OldLocation", columns.OldLocation); Add("MaternalId", columns.MaternalId);
-        Add("PaternalId", columns.PaternalId); Add("Notes", columns.Notes);
+        Add("PaternalId", columns.PaternalId); Add("Notes", columns.Notes); Add("Sex", columns.Sex);
         var data = Table(source, table, header, first, last, mapping.Select(x => x.Column));
-        if (weightUnit is not ("g" or "kg")) throw new ArgumentException("Weight unit must be explicitly g or kg.");
+        if (weightUnit is not ("raw" or "g" or "kg")) throw new ArgumentException("Use raw BW values; retained legacy g/kg imports are also supported.");
         var application = new ImportApplication(Guid.NewGuid().ToString("N"), source.Id, table, header, first, last,
             weightUnit, mapping.ToImmutableArray(), allowIntegerIds, demonstration);
         var animals = ImmutableArray.CreateBuilder<Animal>(); var details = ImmutableArray.CreateBuilder<AnimalDetails>();
@@ -231,12 +235,12 @@ public static class DataImport
                 if (!decimal.TryParse(rawWeight, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
                     CultureInfo.InvariantCulture, out var weight)) throw new ArgumentException("Weight: require a finite decimal using '.'; thousands separators are unsupported.");
                 weight = checked(weight * (weightUnit == "kg" ? 1000m : 1m));
-                if (weight <= 0 || weight > 1_000_000m) throw new ArgumentException("Weight: require > 0 and <= 1,000,000 grams.");
+                if (weight <= 0 || weight > 1_000_000m) throw new ArgumentException("Weight: require > 0 and <= 1,000,000.");
                 if (!demonstration && identities.TryGetValue((cohort, id), out int previous))
                     throw new ArgumentException($"AnimalId: duplicate within cohort, also at row {previous}; correct the source or map an explicit cohort.");
                 identities.TryAdd((cohort, id), i);
                 string record = Guid.NewGuid().ToString("N");
-                animals.Add(new(record, id, weight, cohort, Get(columns.OldLocation, "OldLocation")));
+                animals.Add(new(record, id, weight, cohort, Get(columns.OldLocation, "OldLocation")) { Sex = SexAllocation.Parse(Get(columns.Sex, "Sex")) });
                 details.Add(new(record, new(application.Id, i), Get(columns.MaternalId, "MaternalId", true),
                     Get(columns.PaternalId, "PaternalId", true), Get(columns.Notes, "Notes")));
             }

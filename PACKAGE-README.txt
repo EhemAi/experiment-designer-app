@@ -1,4 +1,4 @@
-Experiment Designer 1.1.2 - Windows x64
+Experiment Designer 1.1.5 - Windows x64
 
 Extract the entire ZIP before running. Keep App, Setup and Runtime together.
 
@@ -39,3 +39,7 @@ Font and Microsoft runtime licenses are included alongside their files.
 
 License: MIT. See App/LICENSE.txt and App/THIRD-PARTY-NOTICES.md.
 Bundled security runtime: .NET 10.0.14. Public-release candidate pending approval.
+
+Version 1.1.5 adds sex composition controls, balanced BW rank subgroups for RCBD,
+unit-neutral BW and concise allocation/layout Excel exports. Earlier project
+results remain unchanged; generate a new RCBD allocation to use the new rule.

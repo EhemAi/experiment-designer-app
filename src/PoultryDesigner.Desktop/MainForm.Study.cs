@@ -7,12 +7,14 @@ internal sealed partial class MainForm
     private void BuildSetup()
     {
         design.Items.AddRange(new object[] { new MethodOption(Design.Rcbd, "RCBD • BW blocks"), new MethodOption(Design.Crd, "Completely randomized"), new MethodOption(Design.Conventional, "Conventional serpentine") });
-        var designFields = Components.Fields(("Allocation method", design), ("Experimental unit", unit), ("Replicates per treatment", replicates), ("Animals per experimental unit", perPen));
-        var stack = new TableLayoutPanel { Dock = DockStyle.Top, ColumnCount = 1, RowCount = 2, Height = 300 };
+        var designFields = Components.Fields(("Allocation method", design), ("Experimental unit", unit), ("Replicates per treatment", replicates), ("Animals per unit", perPen), ("Sex allocation", sexMode));
+        studyStack = new TableLayoutPanel { Dock = DockStyle.Top, ColumnCount = 1, RowCount = 3, Height = 390 };
+        var stack = studyStack;
         stack.ColumnStyles.Add(new(SizeType.Percent, 100));
-        foreach (int size in new[] { 240, 60 }) stack.RowStyles.Add(new(SizeType.Absolute, size));
+        foreach (int size in new[] { 286, 0, 74 }) stack.RowStyles.Add(new(SizeType.Absolute, size));
         stack.Controls.Add(Components.Card("Experimental design", designFields), 0, 0);
-        method.Dock = DockStyle.Fill; method.AutoSize = false; method.Font = Theme.Body(9); method.Padding = new(12, 6, 12, 6); stack.Controls.Add(method, 0, 1);
+        method.Dock = DockStyle.Fill; method.AutoSize = false; method.Font = Theme.Body(9); method.Padding = new(12, 6, 12, 6); method.Margin = Padding.Empty; stack.Controls.Add(method, 0, 2);
+        BuildSexSettings(); stack.Controls.Add(sexSettingsPanel, 0, 1);
         var treatmentHost = new Panel { Dock = DockStyle.Fill };
         var up = Ui.Button("↑", () => MoveTreatment(-1)); var down = Ui.Button("↓", () => MoveTreatment(1));
         foreach (var button in new[] { up, down }) { button.MinimumSize = new(36, 32); button.Padding = new(0); }
@@ -38,10 +40,12 @@ internal sealed partial class MainForm
         var apply = Ui.Button("Apply settings", () => Guard(ApplySetup)); ((StyledButton)apply).Primary = true;
         var footer = Ui.Bar(apply); footer.Dock = DockStyle.Bottom;
         stages[0].Controls.Add(split); stages[0].Controls.Add(footer);
-        foreach (var control in new[] { replicates, perPen }) control.ValueChanged += (_, _) => DraftSetup();
+        foreach (var control in new[] { replicates, perPen }) control.ValueChanged += (_, _) => { DraftSetup(); RefreshSexSettings(); };
         design.SelectedIndexChanged += (_, _) => { DraftSetup(); Capabilities(); }; unit.SelectedIndexChanged += (_, _) => DraftSetup();
+        sexMode.SelectedIndexChanged += (_, _) => SexModeChanged();
         treatments.CellValueChanged += (_, e) => { if (e.ColumnIndex >= 0 && treatments.Columns[e.ColumnIndex].DataPropertyName is "Treatment ID" or "Label") DraftSetup(); };
-        treatments.RowsRemoved += (_, _) => DraftSetup();
+        treatments.RowsRemoved += (_, _) => { DraftSetup(); if (!loading) RefreshSexSettings(); };
+        treatments.RowsAdded += (_, _) => { if (!loading) RefreshSexSettings(); };
         treatments.DataError += (_, e) => { e.ThrowException = false; pageAlert.Text = "Correct the treatment value before applying settings."; };
     }
 

@@ -9,7 +9,7 @@ internal sealed partial class MainForm
     {
         await Workspace.OpenAsync(fixture, discardChanges: true);
         var original = Workspace.Inputs;
-        Workspace.Revise(original with { Study = original.Study with { Design = Design.Crd, FilterBalance = false }, PreparedLayout = null }, "ANOVA screen regression");
+        Workspace.Revise(original with { Study = original.Study with { Design = Design.Crd, CompactCages = false, BalancedBwCages = false, FilterBalance = false }, PreparedLayout = null }, "ANOVA screen regression");
         setupDirty = selectionDirty = false; Reload(); SetStage(2); firstHousing.Value = 1;
         lastHousing.Value = Workspace.Inputs.Study.Treatments.Length * Workspace.Inputs.Study.Replicates;
         var study = Workspace.Inputs.Study;
@@ -90,7 +90,7 @@ internal sealed partial class MainForm
         check(!previewSwap.Enabled && !mapUnits.Enabled && activateRevision.Enabled, "Historical review exposes activation and blocks current-input edits");
         string active = Workspace.Document.ActiveResultId!;
         var inputs = Workspace.Inputs;
-        Workspace.Revise(inputs with { Study = inputs.Study with { FilterBalance = true, CvLimitPercent = 0, MaximumAttemptsPerBlock = 1 } }, "Smoke: deliberately unattainable CV");
+        Workspace.Revise(inputs with { Study = inputs.Study with { CompactCages = false, BalancedBwCages = false, FilterBalance = true, CvLimitPercent = 0, MaximumAttemptsPerBlock = 1 } }, "Smoke: deliberately unattainable legacy CV");
         var failure = await Workspace.RunAsync(99, "Smoke: failed allocation retention");
         check(failure.Status == RunStatus.Exhausted && Workspace.Document.ActiveResultId == active, "Real exhausted run retains the previous completed result");
         lastRunOutcome = failure; lastRunProject = Workspace.Document.Id; Reload(); SetStage(2);
@@ -127,6 +127,7 @@ internal sealed partial class MainForm
             var choice = reports.ChoiceForSmoke;
             choice.SelectedIndex = 3;
             check(reports.ReportForSmoke.Tables.Length == 1 && reports.ReportForSmoke.Tables[0].Name == "Housing labels", "Labels can be printed separately from blank sheets");
+            check(reports.ExcelReportForSmoke.Tables.Length == 1 && reports.ExcelReportForSmoke.Tables[0].Name == "Layout", "Prepared Excel remains Layout-only when a different print view is selected");
             using var printing = new ReportPrinting(reports.ReportForSmoke);
             check(printing.Pages.SelectMany(p => p.Rows).Count(r => !r.Header && !r.Continuation) == 12, "Native label printing includes every prepared housing unit");
             using var labelPage = printing.Render(0); labelPage.Save(Path.Combine(Path.GetDirectoryName(fixture)!, "prepared-labels-page.png"));

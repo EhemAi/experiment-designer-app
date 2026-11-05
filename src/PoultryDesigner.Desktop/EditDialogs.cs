@@ -13,25 +13,27 @@ internal sealed class AnimalEditDialog : Form
     internal AnimalEditDialog(ProjectInputs input, string recordId)
     {
         AutoScaleMode = AutoScaleMode.Dpi; AutoScaleDimensions = new(96, 96);
-        Text = "Correct animal record"; Font = Theme.Body(); ClientSize = new(650, 640); StartPosition = FormStartPosition.CenterParent;
+        Text = "Correct animal record"; Font = Theme.Body(); ClientSize = new(650, 700); StartPosition = FormStartPosition.CenterParent;
         var animal = input.Study.Pool.Single(x => x.RecordId == recordId); var details = input.Animals.Single(x => x.RecordId == recordId);
         var values = new[] { animal.AnimalId, animal.Cohort, Ui.Number(animal.WeightGrams), animal.OldLocation, details.MaternalId, details.PaternalId, details.Notes, "" };
-        var names = new[] { "Animal ID", "Cohort", "BW (g)", "Old location", "Maternal ID", "Paternal ID", "Notes", "Correction reason" };
+        var names = new[] { "Animal ID", "Cohort", "BW", "Old location", "Maternal ID", "Paternal ID", "Notes", "Correction reason" };
         var boxes = values.Select((v, i) => { var box = Ui.Text(names[i], i >= 6); box.Text = v; box.Dock = DockStyle.Fill; return box; }).ToArray();
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Padding = new(20) };
         layout.ColumnStyles.Add(new(SizeType.Absolute, 150)); layout.ColumnStyles.Add(new(SizeType.Percent, 100));
         for (int i = 0; i < names.Length; i++) { layout.RowStyles.Add(new(SizeType.Absolute, i >= 6 ? 72 : 50)); layout.Controls.Add(Ui.Label(names[i]), 0, i); layout.Controls.Add(boxes[i], 1, i); }
+        var sex = Ui.Combo(["Unknown", "Male", "Female"]); sex.SelectedItem = animal.Sex.ToString(); sex.Dock = DockStyle.Fill;
+        layout.RowStyles.Add(new(SizeType.Absolute, 46)); layout.Controls.Add(Ui.Label("Sex"), 0, 8); layout.Controls.Add(sex, 1, 8);
         var origin = details.Origin; var app = input.Imports.FirstOrDefault(x => x.Id == origin?.ApplicationId);
         var message = Ui.Label(origin is null ? "Manual record • Immutable record ID: " + recordId : $"Original observation: {app!.Table}, source row {origin.Row}. Record ID: {recordId}"); message.Dock = DockStyle.Fill;
-        layout.Controls.Add(message, 0, 8); layout.SetColumnSpan(message, 2);
+        layout.Controls.Add(message, 0, 9); layout.SetColumnSpan(message, 2);
         var apply = Ui.Button("Save correction", () =>
         {
             try
             {
                 if (!decimal.TryParse(boxes[2].Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var weight) || weight <= 0 || weight > 1_000_000)
-                    throw new ArgumentException("Require a positive BW in grams, at most 1,000,000, using '.'.");
+                    throw new ArgumentException("Require a positive BW, at most 1,000,000, using '.'.");
                 if (string.IsNullOrWhiteSpace(boxes[0].Text) || string.IsNullOrWhiteSpace(boxes[7].Text)) throw new ArgumentException("Animal ID and correction reason are required.");
-                var replacement = animal with { AnimalId = boxes[0].Text.Trim(), Cohort = boxes[1].Text.Trim(), WeightGrams = weight, OldLocation = boxes[3].Text.Trim() };
+                var replacement = animal with { AnimalId = boxes[0].Text.Trim(), Cohort = boxes[1].Text.Trim(), WeightGrams = weight, OldLocation = boxes[3].Text.Trim(), Sex = SexAllocation.Parse((string)sex.SelectedItem!) };
                 if (!input.Study.Demonstration && input.Study.Pool.Any(x => x.RecordId != recordId && x.AnimalId == replacement.AnimalId && x.Cohort == replacement.Cohort))
                     throw new ArgumentException("This identity already exists within the chosen cohort.");
                 Candidate = input with
@@ -44,7 +46,7 @@ internal sealed class AnimalEditDialog : Form
             }
             catch (ArgumentException ex) { message.Text = ex.Message; }
         }); ((StyledButton)apply).Primary = true;
-        layout.Controls.Add(Ui.Bar(apply, Ui.Button("Cancel", () => DialogResult = DialogResult.Cancel)), 1, 9);
+        layout.Controls.Add(Ui.Bar(apply, Ui.Button("Cancel", () => DialogResult = DialogResult.Cancel)), 1, 10);
         Controls.Add(layout); Theme.Apply(this);
     }
 }
@@ -80,7 +82,7 @@ internal sealed class SwapDialog : Form
                 var positions = a.Positions.Where(p => p.AnimalRecordId == First || p.AnimalRecordId == Second).ToArray();
                 var keys = positions.Select(p => (p.TreatmentIndex, p.Replicate)).ToHashSet();
                 var affected = candidate.Pens.Where(p => keys.Contains((p.TreatmentIndex, p.Replicate))).ToArray();
-                preview.SetRows(["Treatment", "Unit", "Before mean (g)", "After mean (g)", "Block CV before (%)", "Block CV after (%)"], affected.Length, i =>
+                preview.SetRows(["Treatment", "Unit", "Before mean", "After mean", "Block CV before (%)", "Block CV after (%)"], affected.Length, i =>
                 {
                     var p = affected[i]; var before = a.Pens.Single(x => x.TreatmentIndex == p.TreatmentIndex && x.Replicate == p.Replicate);
                     return [chosen.Input.Inputs.Study.Treatments[p.TreatmentIndex].Label, p.Replicate, Ui.Number(before.MeanWeightGrams), Ui.Number(p.MeanWeightGrams),

@@ -16,7 +16,7 @@ internal static class ProjectValidation
         int? Column(string name) => app.Columns.SingleOrDefault(x => x.Field == name)?.Column;
         var preview = DataImport.Animals(source, app.Table, app.HeaderRow, app.FirstRow, app.LastRow,
             new(Column("AnimalId") ?? 0, Column("Weight") ?? 0, Column("Cohort"), Column("OldLocation"),
-                Column("MaternalId"), Column("PaternalId"), Column("Notes")), app.WeightUnit, app.Demonstration, app.AllowIntegerIds);
+                Column("MaternalId"), Column("PaternalId"), Column("Notes"), Column("Sex")), app.WeightUnit, app.Demonstration, app.AllowIntegerIds);
         var imported = preview.Value ?? throw new ArgumentException("Retained animal import has invalid source rows.");
         if (ProjectSession.Digest(imported.Application with { Id = app.Id }) != ProjectSession.Digest(app))
             throw new ArgumentException("Animal import mapping is inconsistent.");
@@ -42,8 +42,12 @@ internal static class ProjectValidation
             if (batch.Animals[i] with { RecordId = replay.Animals[i].RecordId } != replay.Animals[i]
                 || batch.Details[i].RecordId != batch.Animals[i].RecordId
                 || batch.Details[i].Origin?.ApplicationId != batch.Application.Id
-                || batch.Details[i] with { RecordId = replay.Details[i].RecordId, Origin = batch.Details[i].Origin is null ? null :
-                    batch.Details[i].Origin! with { ApplicationId = replay.Application.Id } } != replay.Details[i])
+                || batch.Details[i] with
+                {
+                    RecordId = replay.Details[i].RecordId,
+                    Origin = batch.Details[i].Origin is null ? null :
+                    batch.Details[i].Origin! with { ApplicationId = replay.Application.Id }
+                } != replay.Details[i])
                 throw new ArgumentException("Imported animal values or provenance disagree with original source rows.");
     }
     internal static void ValidateTreatmentImport(ImportSource source, TreatmentImport batch)
@@ -52,8 +56,11 @@ internal static class ProjectValidation
         if (!batch.Treatments.SequenceEqual(replay.Treatments) || batch.Details.Length != replay.Details.Length)
             throw new ArgumentException("Treatment import disagrees with original source rows.");
         for (int i = 0; i < batch.Details.Length; i++)
-            if (batch.Details[i].Origin?.ApplicationId != batch.Application.Id || ProjectSession.Digest(batch.Details[i] with { Origin = batch.Details[i].Origin is null ? null :
-                batch.Details[i].Origin! with { ApplicationId = replay.Application.Id } }) != ProjectSession.Digest(replay.Details[i]))
+            if (batch.Details[i].Origin?.ApplicationId != batch.Application.Id || ProjectSession.Digest(batch.Details[i] with
+            {
+                Origin = batch.Details[i].Origin is null ? null :
+                batch.Details[i].Origin! with { ApplicationId = replay.Application.Id }
+            }) != ProjectSession.Digest(replay.Details[i]))
                 throw new ArgumentException("Treatment provenance disagrees with original source rows.");
     }
 
@@ -85,12 +92,14 @@ internal static class ProjectValidation
         var errors = AllocationEngine.Validate(study).Where(x => x !=
             "Select exactly the required number of animals; automatic selection is unavailable."
             && x != "Require at least two treatments, two replicates and one animal per pen."
+            && !x.StartsWith("Sex allocation:", StringComparison.Ordinal)
             && !(required == 0 && x == $"Required animal count must be between 1 and {AllocationEngine.MaximumAnimals}.")).ToArray();
         if (errors.Length > 0) throw new ArgumentException(string.Join(" ", errors));
-        if (input.AutomaticPoolSelection) {
+        if (input.AutomaticPoolSelection)
+        {
             var expected = AutomaticPoolSelection.Apply(input);
             if (!input.Study.SelectedRecordIds.SequenceEqual(expected.Study.SelectedRecordIds) || !input.Selection.SequenceEqual(expected.Selection))
-                throw new ArgumentException("Automatic allocation pool must use the recorded heaviest-first selection rule.");
+                throw new ArgumentException("Automatic allocation pool must use the recorded heaviest-first selection rule and any specified sex counts.");
         }
         if (study.Pool.Any(x => x.OldLocation is null)) throw new ArgumentException("Animal location metadata must be initialized.");
         bool Same(IEnumerable<string> first, IEnumerable<string> second) => first.Order(StringComparer.Ordinal).SequenceEqual(second.Order(StringComparer.Ordinal));
@@ -116,7 +125,7 @@ internal static class ProjectValidation
                 || app.HeaderRow < 1 || app.FirstRow <= app.HeaderRow || app.LastRow < app.FirstRow
                 || app.LastRow - (long)app.FirstRow >= AllocationEngine.MaximumAnimals
                 || !table.Rows.Any(x => x.Number == app.HeaderRow)
-                || app.WeightUnit is not ("" or "g" or "kg")) throw new ArgumentException("Invalid retained import mapping.");
+                || app.WeightUnit is not ("" or "raw" or "g" or "kg")) throw new ArgumentException("Invalid retained import mapping.");
             if (app.WeightUnit.Length > 0) ReimportAnimals(source, app);
             else ReimportTreatments(source, app);
         }

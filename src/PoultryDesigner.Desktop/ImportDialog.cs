@@ -42,7 +42,6 @@ internal sealed class ImportDialog : SourceDialog
     private readonly NumericUpDown header = new() { Minimum = 1, Maximum = 1_048_576, Value = 1, Width = 85 };
     private readonly NumericUpDown first = new() { Minimum = 2, Maximum = 1_048_576, Value = 2, Width = 85 };
     private readonly NumericUpDown last = new() { Minimum = 2, Maximum = 1_048_576, Value = 2, Width = 85 };
-    private readonly ComboBox weightUnit = Ui.Combo(["g", "kg"]);
     private readonly CheckBox numericIds = new() { Text = "Explicitly allow stored integer numeric IDs (display formatting is ignored)", AutoSize = true };
     private readonly CheckBox append = new() { Text = "Append to existing animal pool", AutoSize = true };
     private readonly TextBox reason = Ui.Text("Reason for importing this source");
@@ -69,10 +68,10 @@ internal sealed class ImportDialog : SourceDialog
             DialogResult = DialogResult.OK;
         }); ((StyledButton)apply).Primary = true; apply.Enabled = false;
         inspect = Ui.Button("Validate and preview", () => _ = ValidateAsync());
-        var mappings = new TableLayoutPanel { Dock = DockStyle.Top, Height = 88, ColumnCount = animal ? 7 : 6, RowCount = 1, Margin = Padding.Empty };
+        var mappings = new TableLayoutPanel { Dock = DockStyle.Top, Height = 88, ColumnCount = animal ? 8 : 6, RowCount = 1, Margin = Padding.Empty };
         mappings.RowStyles.Add(new(SizeType.Percent, 100));
         for (int i = 0; i < mappings.ColumnCount; i++) mappings.ColumnStyles.Add(new(SizeType.Percent, 100f / mappings.ColumnCount));
-        foreach (string name in animal ? new[] { "Animal ID", "BW", "Cohort", "Old location", "Maternal ID", "Paternal ID", "Notes" } : new[] { "Treatment ID", "Label", "Factor 1", "Factor 2", "Factor 3", "Factor 4" })
+        foreach (string name in animal ? new[] { "Animal ID", "BW", "Cohort", "Old location", "Maternal ID", "Paternal ID", "Notes", "Sex" } : new[] { "Treatment ID", "Label", "Factor 1", "Factor 2", "Factor 3", "Factor 4" })
         {
             var combo = Ui.Combo([]); combo.Dock = DockStyle.Top; fields.Add(name, combo);
             var field = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new(4) };
@@ -83,11 +82,9 @@ internal sealed class ImportDialog : SourceDialog
             field.Controls.Add(label, 0, 0); field.Controls.Add(combo, 0, 1); mappings.Controls.Add(field, mappings.Controls.Count, 0);
             combo.SelectedIndexChanged += (_, _) => InvalidatePreview();
         }
-        weightUnit.Width = 70; weightUnit.SelectedItem = "g";
         var range = Ui.Bar(Ui.Label("Sheet"), sheet, Ui.Label("Header"), header, Ui.Label("First row"), first, Ui.Label("Last row"), last);
-        var unitLabel = Ui.Label("BW unit"); unitLabel.Visible = animal;
-        var options = Ui.Bar(unitLabel, weightUnit, numericIds, append);
-        weightUnit.Visible = animal; append.Visible = animal;
+        var options = Ui.Bar(numericIds, append);
+        append.Visible = animal;
         var sourceControls = Ui.Bar(Ui.Label("First visible source column"), startColumn, Ui.Label("25 columns per view. CSV row numbers identify record start lines."));
         var top = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new(10) };
         top.ColumnStyles.Add(new(SizeType.Percent, 100));
@@ -98,7 +95,7 @@ internal sealed class ImportDialog : SourceDialog
         Controls.Add(views); Controls.Add(top); Controls.Add(message); Controls.Add(bottom);
         sheet.SelectedIndexChanged += (_, _) => PopulateColumns(); header.ValueChanged += (_, _) => PopulateColumns();
         first.ValueChanged += (_, _) => InvalidatePreview(); last.ValueChanged += (_, _) => InvalidatePreview();
-        numericIds.CheckedChanged += (_, _) => InvalidatePreview(); weightUnit.SelectedIndexChanged += (_, _) => InvalidatePreview();
+        numericIds.CheckedChanged += (_, _) => InvalidatePreview();
         Theme.Apply(this);
         FormClosing += (_, e) => { if (working) { e.Cancel = true; message.Text = "Finish the source validation before closing this dialog."; } };
     }
@@ -123,6 +120,12 @@ internal sealed class ImportDialog : SourceDialog
                 for (int column = 1; column <= max; column++)
                     combo.Items.Add(new ColumnOption(column, $"{column}: {cells.SingleOrDefault(x => x.Column == column)?.Value ?? "(no header)"}"));
                 combo.SelectedIndex = required ? -1 : 0;
+                if (field == "Sex")
+                {
+                    var sexHeader = cells.FirstOrDefault(c => c.Value.Trim().Equals("Sex", StringComparison.OrdinalIgnoreCase)
+                        || c.Value.Trim().Equals("Gender", StringComparison.OrdinalIgnoreCase));
+                    if (sexHeader is not null) combo.SelectedItem = combo.Items.Cast<ColumnOption>().Single(c => c.Number == sexHeader.Column);
+                }
             }
         }
         finally { refreshing = false; }
@@ -134,9 +137,9 @@ internal sealed class ImportDialog : SourceDialog
         if (!animal) throw new InvalidOperationException("Animal entry requires animal mappings.");
         sheet.SelectedIndex = 0; header.Value = 1; first.Value = 2;
         last.Value = Source.Tables[0].Rows.Max(r => r.Number);
-        foreach (var (name, column) in new[] { ("Animal ID", 1), ("BW", 2), ("Cohort", 3), ("Old location", 4) })
+        foreach (var (name, column) in new[] { ("Animal ID", 1), ("BW", 2), ("Cohort", 3), ("Old location", 4), ("Sex", 5) })
             fields[name].SelectedItem = fields[name].Items.Cast<ColumnOption>().Single(c => c.Number == column);
-        weightUnit.SelectedItem = "g"; numericIds.Checked = false; reason.Text = "Enter and review animal observations";
+        numericIds.Checked = false; reason.Text = "Enter and review animal observations";
     }
     internal async Task ExerciseEnteredAnimalsForSmoke(Action<bool, string> check)
     {
@@ -150,11 +153,11 @@ internal sealed class ImportDialog : SourceDialog
         if (sheet.SelectedItem is not string table) { message.Text = "Choose a sheet explicitly."; return; }
         int id = Column(animal ? "Animal ID" : "Treatment ID") ?? 0, value = Column(animal ? "BW" : "Label") ?? 0;
         if (id == 0 || value == 0) { message.Text = "Choose both required columns explicitly."; return; }
-        var cols = animal ? new AnimalColumns(id, value, Column("Cohort"), Column("Old location"), Column("Maternal ID"), Column("Paternal ID"), Column("Notes")) : null;
+        var cols = animal ? new AnimalColumns(id, value, Column("Cohort"), Column("Old location"), Column("Maternal ID"), Column("Paternal ID"), Column("Notes"), Column("Sex")) : null;
         var factors = animal ? ImmutableArray<int>.Empty : Enumerable.Range(1, 4).Select(i => Column("Factor " + i)).Where(x => x.HasValue).Select(x => x!.Value).ToImmutableArray();
-        int h = (int)header.Value, f = (int)first.Value, l = (int)last.Value; bool integer = numericIds.Checked; string unit = (string)weightUnit.SelectedItem!;
+        int h = (int)header.Value, f = (int)first.Value, l = (int)last.Value; bool integer = numericIds.Checked; const string unit = "raw";
         working = true; inspect.Enabled = apply.Enabled = false; foreach (var combo in fields.Values) combo.Enabled = false;
-        sheet.Enabled = header.Enabled = first.Enabled = last.Enabled = numericIds.Enabled = weightUnit.Enabled = false;
+        sheet.Enabled = header.Enabled = first.Enabled = last.Enabled = numericIds.Enabled = false;
         busyIndicator.Visible = true; message.Text = "Validating source records…";
         try
         {
@@ -165,8 +168,8 @@ internal sealed class ImportDialog : SourceDialog
                 AnimalBatch = result.Value; issues = result.Issues;
                 if (result.Success)
                 {
-                    var batch = result.Value!; preview.SetRows(["Source row", "Animal ID", "Cohort", "BW (g)", "Old location", "Maternal ID", "Paternal ID", "Notes"], batch.Animals.Length,
-                    i => [batch.Details[i].Origin!.Row, batch.Animals[i].AnimalId, batch.Animals[i].Cohort, Ui.Number(batch.Animals[i].WeightGrams), batch.Animals[i].OldLocation, batch.Details[i].MaternalId, batch.Details[i].PaternalId, batch.Details[i].Notes]);
+                    var batch = result.Value!; preview.SetRows(["Source row", "Animal ID", "Cohort", "BW", "Old location", "Maternal ID", "Paternal ID", "Notes", "Sex"], batch.Animals.Length,
+                    i => [batch.Details[i].Origin!.Row, batch.Animals[i].AnimalId, batch.Animals[i].Cohort, Ui.Number(batch.Animals[i].WeightGrams), batch.Animals[i].OldLocation, batch.Details[i].MaternalId, batch.Details[i].PaternalId, batch.Details[i].Notes, batch.Animals[i].Sex.ToString()]);
                 }
             }
             else
@@ -188,7 +191,7 @@ internal sealed class ImportDialog : SourceDialog
         finally
         {
             busyIndicator.Visible = false; working = false; inspect.Enabled = true; foreach (var combo in fields.Values) combo.Enabled = true;
-            sheet.Enabled = header.Enabled = first.Enabled = last.Enabled = numericIds.Enabled = weightUnit.Enabled = true;
+            sheet.Enabled = header.Enabled = first.Enabled = last.Enabled = numericIds.Enabled = true;
         }
     }
     internal async Task ReviewPendingPoolForSmoke(Action<bool, string> check, int lastRow = 290)
@@ -207,7 +210,7 @@ internal sealed class ImportDialog : SourceDialog
         check(reason.Parent is null && Reason == (animal ? "Import animals" : "Import treatments"), "Import records a mode-specific action without requiring a reason field");
         if (!animal)
         {
-            check(!weightUnit.Visible && !append.Visible && !fields.ContainsKey("BW"), "Treatment import hides animal-only mappings and options");
+            check(!append.Visible && !fields.ContainsKey("BW"), "Treatment import hides animal-only mappings and options");
             sheet.SelectedIndex = 0; first.Value = 2; last.Value = 3;
             fields["Treatment ID"].SelectedItem = fields["Treatment ID"].Items.Cast<ColumnOption>().Single(x => x.Number == 1);
             fields["Label"].SelectedItem = fields["Label"].Items.Cast<ColumnOption>().Single(x => x.Number == 2);
@@ -222,7 +225,7 @@ internal sealed class ImportDialog : SourceDialog
         reason.Text = "Reviewed synthetic source";
         await ValidateAsync();
         check(AnimalBatch?.Animals.Length == 48 && apply.Enabled, "UI import preview validates the complete chosen source range");
-        check(AnimalBatch!.Details[0].Origin!.Row == 2 && AnimalBatch.Application.WeightUnit == "g", "UI mapping retains original row and weight unit");
+        check(AnimalBatch!.Details[0].Origin!.Row == 2 && AnimalBatch.Application.WeightUnit == "raw", "UI mapping retains original row and unconverted BW");
         fields["BW"].SelectedItem = fields["BW"].Items.Cast<ColumnOption>().Single(x => x.Number == 1);
         check(!apply.Enabled && AnimalBatch is null, "Changed mapping invalidates the earlier import preview");
         await ValidateAsync(); check(!apply.Enabled && AnimalBatch is null, "Invalid repeated mapping cannot be applied from the dialog");

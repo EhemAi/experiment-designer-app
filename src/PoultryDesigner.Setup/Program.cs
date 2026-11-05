@@ -127,6 +127,8 @@ internal sealed class SetupForm : Form
         {
             string root = Path.GetFullPath(destination.Text);
             var updates = new Progress<string>(message => { if (!IsDisposed) status.Text = message.StartsWith("Installing ", StringComparison.Ordinal) ? "Installing application files…" : message; });
+            string package = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, ".."));
+            WindowsIntegration.ValidateRoot(root, Installation.ReadPackage(package).Version);
             var receipt = await Task.Run(() => Installation.Install(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..")), root, updates));
             WindowsIntegration.CurrentUser.Register(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..")), root, receipt, shortcut.Checked);
             status.Text = "Installed version " + receipt.Version + ". Open it below or find Experiment Designer in Start. Windows Installed apps includes its uninstall option.";

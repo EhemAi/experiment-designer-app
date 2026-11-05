@@ -8,14 +8,14 @@ internal sealed class AnimalEntryDialog : Form
     private readonly DataGridView grid = Ui.Grid(true);
     private readonly DataTable entries = new();
     private readonly bool demonstration;
-    private readonly Label message = Ui.Label("Enter IDs and body weights in grams. Cohort and old location are optional.");
+    private readonly Label message = Ui.Label("Enter IDs and body weights. Sex, cohort and old location are optional. Sex: M/F, Male/Female or Unknown.");
     internal ImportSource? Source { get; private set; }
     internal AnimalEntryDialog(bool demonstration = false)
     {
         this.demonstration = demonstration;
         AutoScaleMode = AutoScaleMode.Dpi; AutoScaleDimensions = new(96, 96); Font = Theme.Body();
         Text = "Enter animals"; ClientSize = new(860, 520); MinimumSize = new(700, 440); StartPosition = FormStartPosition.CenterParent;
-        foreach (string name in new[] { "Animal ID", "BW (g)", "Cohort", "Old location" }) entries.Columns.Add(name, typeof(string));
+        foreach (string name in new[] { "Animal ID", "BW", "Cohort", "Old location", "Sex" }) entries.Columns.Add(name, typeof(string));
         grid.DataSource = entries;
         var heading = Ui.Label("Enter animals"); heading.Font = Theme.Heading(18);
         var footer = Ui.Bar(Ui.Button("Review entries", Review), Ui.Button("Cancel", () => DialogResult = DialogResult.Cancel)); footer.Dock = DockStyle.Bottom;
@@ -28,7 +28,7 @@ internal sealed class AnimalEntryDialog : Form
         {
             grid.EndEdit(); BindingContext![entries]!.EndCurrentEdit();
             Source = CreateSource();
-            var preview = DataImport.Animals(Source, "Delimited", 1, 2, Source.Tables[0].Rows.Max(r => r.Number), new(1, 2, Cohort: 3, OldLocation: 4), demonstration: demonstration);
+            var preview = DataImport.Animals(Source, "Delimited", 1, 2, Source.Tables[0].Rows.Max(r => r.Number), new(1, 2, Cohort: 3, OldLocation: 4, Sex: 5), demonstration: demonstration);
             if (!preview.Success) throw new ArgumentException(string.Join(" ", preview.Issues.Take(3).Select(i => $"Row {i.Row}: {i.Field} — {i.Message}")));
             DialogResult = DialogResult.OK;
         }
@@ -39,7 +39,7 @@ internal sealed class AnimalEntryDialog : Form
         var rows = entries.Rows.Cast<DataRow>().Where(r => r.RowState != DataRowState.Deleted && r.ItemArray.Any(v => !string.IsNullOrWhiteSpace(Convert.ToString(v)))).ToArray();
         if (rows.Length == 0) throw new ArgumentException("Enter at least one animal ID and weight.");
         string Quote(object? value) => "\"" + (Convert.ToString(value) ?? "").Replace("\"", "\"\"") + "\"";
-        var csv = "ID,BW,Cohort,Old location\n" + string.Join("\n", rows.Select(r => string.Join(",", r.ItemArray.Select(Quote))));
+        var csv = "ID,BW,Cohort,Old location,Sex\n" + string.Join("\n", rows.Select(r => string.Join(",", r.ItemArray.Select(Quote))));
         return DataImport.Read(Encoding.UTF8.GetBytes(csv), "entered-animals.csv");
     }
     internal ImportSource ExerciseForSmoke()

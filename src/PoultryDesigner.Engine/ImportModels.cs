@@ -27,5 +27,5 @@ public sealed record ImportPreview<T>(T? Value, ImmutableArray<ImportIssue> Issu
     public bool Success => Value is not null && Issues.IsEmpty;
 }
 public sealed record AnimalColumns(int Identity, int Weight, int? Cohort = null, int? OldLocation = null,
-    int? MaternalId = null, int? PaternalId = null, int? Notes = null);
+    int? MaternalId = null, int? PaternalId = null, int? Notes = null, int? Sex = null);
 public sealed record TreatmentColumns(int Identity, int Label, ImmutableArray<int> Factors = default);

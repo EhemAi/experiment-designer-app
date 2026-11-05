@@ -206,7 +206,7 @@ try
         Check(Json(Success(study, 5)) == Json(old), "Current culture cannot change replay.");
     }
     finally { CultureInfo.CurrentCulture = priorCulture; }
-    foreach (var type in typeof(Study).Assembly.GetExportedTypes()) Check(type.GetProperties().All(p => !p.Name.Contains("Sex", StringComparison.OrdinalIgnoreCase)), "No sex properties in engine API.");
+    Check(Make().SexMode == SexAllocationMode.Ignore && Make().Pool.All(a => a.Sex == AnimalSex.Unknown), "Sex defaults preserve existing study behavior.");
     Console.WriteLine("PASS: validation, filtering, cancellation, swaps, provenance and physical maps.");
 
     // Compare calculations against captured native Excel results; treatment draws deliberately differ.
@@ -217,6 +217,11 @@ try
     checks += HousingChecks.Run(root);
     checks += AnovaChecks.Run();
     checks += AutomaticPoolChecks.Run(root);
+    checks += SexAllocationChecks.Run(root);
+    checks += SexSettingsChecks.Run(root);
+    checks += ReportRefinementChecks.Run(root);
+    checks += CompactCageChecks.Run(root);
+    checks += BalancedBwChecks.Run(root);
     checks += Section7Checks.Run(root);
     foreach (string name in new[] { "rcbd-no-sex", "crd-no-sex", "conventional-no-sex", "rcbd-exact-pool", "rcbd-tied-weights" })
     {

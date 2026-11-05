@@ -15,6 +15,8 @@ internal sealed partial class MainForm
     private readonly StatStrip animalStats = new(), allocationStats = new(), qualityStats = new();
     private readonly ScientificPlot treatmentPlot = new();
     private readonly ComboBox decisionFilter = Ui.Combo(["All decisions", "Include", "Exclude", "Pending"]);
+    private readonly ComboBox sexFilter = Ui.Combo(["All", "Male", "Female", "Unknown"]);
+    private readonly Label sexCounts = Ui.Label("");
     private readonly ComboBox cohortFilter = Ui.Combo([]), locationFilter = Ui.Combo([]), sourceFilter = Ui.Combo([]);
     private Panel animalEmpty = null!, allocationEmpty = null!, allocationViews = null!;
     private FlowLayoutPanel decisionActions = null!;
@@ -184,7 +186,7 @@ internal sealed partial class MainForm
         pageAlert.Text = stage switch
         {
             0 => setupDirty ? "Apply your changes to continue." : setup ? "" : "Add at least two treatments and two replicates.",
-            1 => automatic ? s.Pool.Length < required ? $"Import {required - s.Pool.Length:N0} more animals to fill the study." : $"Heaviest {included:N0} animals selected automatically; {s.Pool.Length - included:N0} extras (EX). Continue to Allocation."
+            1 => automatic ? s.Pool.Length < required ? $"Import {required - s.Pool.Length:N0} more animals to fill the study." : $"{(SexAllocation.UsesSpecifiedCounts(s) ? "Heaviest animals within sex counts" : "Heaviest animals overall")}: {included:N0} selected; {s.Pool.Length - included:N0} extras (EX). Continue to Allocation."
                 : !ready || selectionDirty ? PresentationState.SelectionMessage(s, selection.Values) + (selectionDirty ? " Save or commit your changes." : "") : "",
             2 => !ready ? setupDirty ? "Apply settings before allocation." : selectionDirty ? "Commit animal selection before allocation." : PresentationState.SelectionMessage(s, selection.Values) : Workspace.HasEarlierInputRevision ? "This result uses previous study settings." : "",
             _ => ""
@@ -195,6 +197,11 @@ internal sealed partial class MainForm
             pageAlert.ForeColor = lastRunOutcome.Status == RunStatus.Invalid ? Theme.Red : Theme.Warning;
         }
         if (stage == 2 && ready && !housingValid) { pageAlert.Text = housingCount.Text + ". Adjust the range before generating."; pageAlert.ForeColor = Theme.Warning; }
+        if (stage is 0 or 1 or 2 && !setupDirty && !selectionDirty)
+        {
+            var sexErrors = AllocationEngine.Validate(s).Where(x => x.StartsWith("Sex allocation:", StringComparison.Ordinal)).ToArray();
+            if (sexErrors.Length > 0) { pageAlert.Text = string.Join(" ", sexErrors); pageAlert.ForeColor = Theme.Warning; }
+        }
         Components.Tip(generate, ready ? "Generate a new recorded allocation with the entered seed." : pageAlert.Text);
         Components.Tip(commitSelection, PresentationState.SelectionMessage(s, selection.Values));
         treatmentHeading.Text = $"Treatments · {treatmentTable.Rows.Cast<DataRow>().Count(x => x.RowState != DataRowState.Deleted)}";

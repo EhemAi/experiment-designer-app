@@ -10,13 +10,21 @@ public static class AutomaticPoolSelection
         var study = input.Study;
         long required = (long)study.Treatments.Length * study.Replicates * study.AnimalsPerPen;
         int count = required > 0 ? (int)Math.Min(study.Pool.Length, required) : study.Pool.Length;
-        var selected = study.Pool.OrderByDescending(a => a.WeightGrams)
+        var ranked = study.Pool.OrderByDescending(a => a.WeightGrams)
             .ThenBy(a => a.AnimalId, StringComparer.Ordinal).ThenBy(a => a.RecordId, StringComparer.Ordinal)
-            .Take(count).Select(a => a.RecordId).ToHashSet(StringComparer.Ordinal);
+             .ToArray();
+        IEnumerable<Animal> candidates = ranked.Take(count);
+        if (SexAllocation.UsesSpecifiedCounts(study) && SexAllocation.ValidateSettings(study).IsEmpty
+            && required > 0 && required <= AllocationEngine.MaximumAnimals) {
+            var needs = SexAllocation.RequiredCounts(study);
+            candidates = ranked.Where(a => a.Sex == AnimalSex.Male).Take((int)needs.Males)
+                .Concat(ranked.Where(a => a.Sex == AnimalSex.Female).Take((int)needs.Females));
+        }
+        var selected = candidates.Select(a => a.RecordId).ToHashSet(StringComparer.Ordinal);
         return input with {
             Study = study with { SelectedRecordIds = study.Pool.Where(a => selected.Contains(a.RecordId)).Select(a => a.RecordId).ToImmutableArray() },
             Selection = study.Pool.Select(a => new SelectionDecision(a.RecordId, selected.Contains(a.RecordId) ? SelectionChoice.Include : SelectionChoice.Exclude,
-                selected.Contains(a.RecordId) ? "Automatic selection: heaviest animals first" : "EX: unused extra animal")).ToImmutableArray()
+                selected.Contains(a.RecordId) ? SexAllocation.UsesSpecifiedCounts(study) ? "Automatic selection: heaviest animals within specified sex counts" : "Automatic selection: heaviest animals first" : "EX: unused extra animal")).ToImmutableArray()
         };
     }
 }

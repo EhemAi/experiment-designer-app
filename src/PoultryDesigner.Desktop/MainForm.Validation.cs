@@ -14,6 +14,8 @@ internal sealed partial class MainForm
         }
         Field(replicates, replicates.Value < 2 ? "At least two replicates per treatment are required." : "");
         Field(perPen, perPen.Value < 1 ? "At least one animal per experimental unit is required." : "");
+        try { ReadSexSettings(); Field(sexMode, ""); }
+        catch (ArgumentException ex) { Field(sexMode, ex.Message); }
         var rows = treatmentTable.Rows.Cast<DataRow>().Where(x => x.RowState != DataRowState.Deleted).ToArray();
         string[] ids = rows.Select(r => Convert.ToString(r["Treatment ID"])!.Trim()).ToArray();
         string[] labels = rows.Select(r => Convert.ToString(r["Label"])!.Trim()).ToArray();

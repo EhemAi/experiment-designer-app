@@ -6,7 +6,7 @@ namespace PoultryDesigner.Desktop;
 internal sealed partial class MainForm
 {
     private readonly Dictionary<string, string> animalSourceNames = [];
-    private void ClearAnimalFilters() { loading = true; search.Clear(); foreach (var combo in new[] { cohortFilter, sourceFilter, locationFilter, decisionFilter }) combo.SelectedIndex = 0; loading = false; CaptureSelection(); FilterAnimals(); }
+    private void ClearAnimalFilters() { loading = true; search.Clear(); foreach (var combo in new[] { cohortFilter, sourceFilter, locationFilter, decisionFilter, sexFilter }) combo.SelectedIndex = 0; loading = false; CaptureSelection(); FilterAnimals(); }
     private string[] HighlightedIds() => checkedAnimals.Concat(animals.SelectedRows.Cast<DataGridViewRow>().Select(x => Convert.ToString(x.Cells["Record ID"].Value)!)).Distinct(StringComparer.Ordinal).ToArray();
     private void RefreshHighlighted()
     {
@@ -35,6 +35,8 @@ internal sealed partial class MainForm
                 int match = combo.Items.IndexOf(previous); combo.SelectedIndex = match >= 0 ? match : 0;
             }
             Fill(cohortFilter, Workspace.Inputs.Study.Pool.Select(a => a.Cohort));
+            var sexTotals = Workspace.Inputs.Study.Pool.GroupBy(a => a.Sex).ToDictionary(g => g.Key, g => g.Count());
+            sexCounts.Text = $"Pool: {sexTotals.GetValueOrDefault(AnimalSex.Male):N0} M / {sexTotals.GetValueOrDefault(AnimalSex.Female):N0} F / {sexTotals.GetValueOrDefault(AnimalSex.Unknown):N0} unknown";
             Fill(locationFilter, Workspace.Inputs.Study.Pool.Select(a => a.OldLocation));
             Fill(sourceFilter, Workspace.Document.Sources.Select(s => s.FileName));
             var imported = Workspace.Inputs.Imports.ToDictionary(x => x.Id, x => x.SourceId);
@@ -47,7 +49,7 @@ internal sealed partial class MainForm
     private bool MatchesFilters(Animal animal)
     {
         bool Match(ComboBox combo, string value) => combo.SelectedIndex <= 0 || string.Equals(combo.SelectedItem?.ToString(), value, StringComparison.Ordinal);
-        if (!Match(cohortFilter, animal.Cohort) || !Match(locationFilter, animal.OldLocation) || !Match(decisionFilter, selection[animal.RecordId].Choice.ToString())) return false;
+        if (!Match(sexFilter, animal.Sex.ToString()) || !Match(cohortFilter, animal.Cohort) || !Match(locationFilter, animal.OldLocation) || !Match(decisionFilter, selection[animal.RecordId].Choice.ToString())) return false;
         return Match(sourceFilter, animalSourceNames.GetValueOrDefault(animal.RecordId) ?? "");
     }
     private void ShowQuality(ChosenRevision snapshot)
@@ -58,13 +60,21 @@ internal sealed partial class MainForm
         ShowBalanceNotice(anova);
         string cvValue = a.Blocks.IsEmpty ? "Not applicable" : a.Blocks.Max(x => x.CvPercent).ToString("0.###") + " %";
         decimal range = treatmentBalance.Treatments.Max(x => x.MeanWeightGrams) - treatmentBalance.Treatments.Min(x => x.MeanWeightGrams);
-        qualityStats.ShowValues(("Animals allocated", a.Positions.Length.ToString("N0")), ("Maximum block BW CV", cvValue), ("Treatment mean BW range", range.ToString("0.###") + " g"));
+        qualityStats.ShowValues(("Animals allocated", a.Positions.Length.ToString("N0")), ("Maximum block BW CV", cvValue), ("Treatment mean BW range", range.ToString("0.###")));
         Components.Tip(qualityStats, "Original block attempts: " + (a.Attempts.IsEmpty ? "Not applicable" : a.Attempts.Sum(x => (long)x.Attempts).ToString("N0")) + ". See Diagnostics for the complete records.");
-        int exceeded = s.FilterBalance ? a.Blocks.Count(b => PresentationState.CvExceeds(b.CvPercent, s.CvLimitPercent)) : 0;
+        decimal cvTarget = s.FilterBalance ? s.CvLimitPercent : AllocationEngine.AutomaticBwCvTargetPercent;
+        int exceeded = s.FilterBalance || s.BalancedBwCages ? a.Blocks.Count(b => PresentationState.CvExceeds(b.CvPercent, cvTarget)) : 0;
         allocationFeedback.ForeColor = exceeded > 0 ? Theme.Warning : Theme.Success;
-        allocationFeedback.Text = exceeded > 0 ? $"Warning: {exceeded} current blocks exceed the configured {s.CvLimitPercent}% CV limit. Review current metrics and the audit log."
-            : s.FilterBalance ? "Allocation complete. BW balance meets the CV limit." : "Allocation complete.";
-        if (anova.PValue is <= .6) { allocationFeedback.Text = "Allocation recorded. Review the treatment BW balance above before export."; allocationFeedback.ForeColor = Theme.Warning; }
+        allocationFeedback.Text = exceeded > 0 ? $"Warning: {exceeded} current blocks exceed the {cvTarget}% BW CV target. Review Pen BW ranges and Diagnostics; the selected animals and sex counts were retained."
+            : s.FilterBalance || s.BalancedBwCages ? "Allocation complete. BW balance meets the CV target." : "Allocation complete.";
+        if (anova.PValue is <= .6) { allocationFeedback.Text = exceeded > 0 ? allocationFeedback.Text + " Review treatment BW balance before export." : "Allocation recorded. Review the treatment BW balance above before export."; allocationFeedback.ForeColor = Theme.Warning; }
+        if (s.BalancedBwCages && exceeded > 0)
+        {
+            balanceNotice.Text += $"\nBlock BW: {exceeded} blocks exceed the {cvTarget}% CV target. Review Pen BW and Diagnostics.";
+            balanceNotice.ForeColor = Theme.Warning;
+            balanceNoticePanel.BackColor = balanceNotice.BackColor = Theme.WarningBackground;
+            repeatAllocation.Visible = true;
+        }
         if (snapshot.Input.Id != Workspace.Document.CurrentInputId) allocationFeedback.Text += " Uses previous study settings.";
         treatmentPlot.Values = treatmentBalance.Treatments.Select(x => (x.Label, x.MeanWeightGrams)).ToArray();
         plotCard.Height = Math.Max(170, 44 + treatmentPlot.Values.Length * 40);

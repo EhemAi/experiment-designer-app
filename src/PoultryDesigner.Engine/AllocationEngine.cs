@@ -8,15 +8,21 @@ namespace PoultryDesigner.Engine;
 public static class AllocationEngine
 {
     public const string Version = "1.0.0-splitmix64";
+    public const decimal AutomaticBwCvTargetPercent = 0.5m;
     // Bounds protect arithmetic and keep accidental oversized requests out of the desktop app.
     public const int MaximumAnimals = 100_000;
     public static ImmutableArray<string> Validate(Study s)
     {
         var errors = ImmutableArray.CreateBuilder<string>();
         if (!Enum.IsDefined(s.Design)) errors.Add("Unknown design.");
+        if (!Enum.IsDefined(s.SexMode)) errors.Add("Unknown sex allocation mode.");
+        if (s.BalancedBwCages && (s.Design != Design.Rcbd || s.CompactCages)) errors.Add("Ranked BW subgroup balancing requires RCBD and cannot combine with the earlier contiguous-cage rule.");
+        if (s.CompactCages && s.Design != Design.Rcbd) errors.Add("Closest-weight cage grouping applies to RCBD.");
+        if (s.CompactCages && s.FilterBalance) errors.Add("Closest-weight cages must remain intact; block CV is reported rather than used to mix their animals.");
         if (s.Pool.IsDefault || s.SelectedRecordIds.IsDefault || s.Treatments.IsDefault)
             return ["Pool, selection and treatments must be initialized."];
         int t = s.Treatments.Length;
+        errors.AddRange(SexAllocation.ValidateSettings(s));
         if (t < 2 || s.Replicates < 2 || s.AnimalsPerPen < 1) errors.Add("Require at least two treatments, two replicates and one animal per pen.");
         long required;
         try { required = checked((long)t * s.Replicates * s.AnimalsPerPen); }
@@ -25,14 +31,14 @@ public static class AllocationEngine
         if (s.Pool.Length > MaximumAnimals) errors.Add("Pool exceeds the supported resource limit.");
         if (s.SelectedRecordIds.Length != required) errors.Add("Select exactly the required number of animals; automatic selection is unavailable.");
         if (s.CvLimitPercent < 0 || s.CvLimitPercent > 100 || s.MaximumAttemptsPerBlock < 1 || s.MaximumAttemptsPerBlock > 1_000_000)
-            errors.Add("CV must be 0–100 percent and attempts must be 1–1,000,000.");
+            errors.Add("CV must be 0â€“100 percent and attempts must be 1â€“1,000,000.");
         if (s.FilterBalance && s.Design != Design.Rcbd) errors.Add("Balance filtering is supported only for RCBD.");
         static bool Bad(string? v) => string.IsNullOrWhiteSpace(v) || v != v.Trim();
         if (s.Treatments.Any(x => x is null || Bad(x.Id) || Bad(x.Label))) errors.Add("Treatment IDs and labels must be nonblank and trimmed.");
         else if (s.Treatments.Select(x => x.Id).Distinct(StringComparer.Ordinal).Count() != t || s.Treatments.Select(x => x.Label).Distinct(StringComparer.Ordinal).Count() != t)
             errors.Add("Treatment IDs and labels must be unique.");
-        if (s.Pool.Any(x => x is null || Bad(x.RecordId) || Bad(x.AnimalId) || x.Cohort is null || x.Cohort != x.Cohort.Trim() || x.WeightGrams <= 0 || x.WeightGrams > 1_000_000m))
-            errors.Add("Animal identities must be nonblank and trimmed; BW must be positive and at most 1,000,000 grams.");
+        if (s.Pool.Any(x => x is null || Bad(x.RecordId) || Bad(x.AnimalId) || x.Cohort is null || x.Cohort != x.Cohort.Trim() || !Enum.IsDefined(x.Sex) || x.WeightGrams <= 0 || x.WeightGrams > 1_000_000m))
+            errors.Add("Animal identities must be nonblank and trimmed; BW must be positive and at most 1,000,000.");
         else
         {
             var ids = s.Pool.Select(x => x.RecordId).ToHashSet(StringComparer.Ordinal);
@@ -42,17 +48,45 @@ public static class AllocationEngine
             if (s.SelectedRecordIds.Any(x => x is null || !ids.Contains(x))) errors.Add("Selection contains an unknown record.");
         }
         if (s.SelectedRecordIds.Distinct(StringComparer.Ordinal).Count() != s.SelectedRecordIds.Length) errors.Add("Selection contains duplicate records.");
+        if (errors.Count == 0 || (SexAllocation.UsesSpecifiedCounts(s) && errors.All(x => x == "Select exactly the required number of animals; automatic selection is unavailable.")))
+            errors.AddRange(SexAllocation.Validate(s));
         return errors.ToImmutable();
     }
 
     public static string Fingerprint(Study s)
     {
+        string previous = LegacyFingerprint(s);
+        if (s.BalancedBwCages) return Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new { Previous = previous, CageGrouping = "balanced-rank-subgroups-v1" })));
+        return !s.CompactCages ? previous : Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new { Previous = previous, CageGrouping = "contiguous-v1" })));
+    }
+
+    private static string LegacyFingerprint(Study s)
+    {
         var selected = s.SelectedRecordIds.ToHashSet(StringComparer.Ordinal);
-        var payload = new { Version, s.Design, s.Replicates, s.AnimalsPerPen, s.FilterBalance,
-            s.CvLimitPercent, s.MaximumAttemptsPerBlock, s.Demonstration, s.Treatments,
+        var payload = new
+        {
+            Version,
+            s.Design,
+            s.Replicates,
+            s.AnimalsPerPen,
+            s.FilterBalance,
+            s.CvLimitPercent,
+            s.MaximumAttemptsPerBlock,
+            s.Demonstration,
+            s.Treatments,
             Animals = s.Pool.Where(a => selected.Contains(a.RecordId)).OrderBy(a => a.RecordId, StringComparer.Ordinal)
-                .Select(a => new { a.RecordId, a.AnimalId, a.Cohort, Weight = a.WeightGrams.ToString("G29", CultureInfo.InvariantCulture) }) };
-        return Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(payload)));
+                .Select(a => new { a.RecordId, a.AnimalId, a.Cohort, Weight = a.WeightGrams.ToString("G29", CultureInfo.InvariantCulture) })
+        };
+        string legacy = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(payload)));
+        if (s.SexMode == SexAllocationMode.Ignore) return legacy;
+        string sexFingerprint = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            Legacy = legacy,
+            s.SexMode,
+            Sex = s.Pool.Where(a => selected.Contains(a.RecordId)).OrderBy(a => a.RecordId, StringComparer.Ordinal).Select(a => new { a.RecordId, a.Sex })
+        })));
+        if (!SexAllocation.UsesSpecifiedCounts(s)) return sexFingerprint;
+        return Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new { SexFingerprint = sexFingerprint, s.SexSettings })));
     }
 
     public static RunResult Run(Study study, ulong seed, CancellationToken cancellation = default,
@@ -60,6 +94,9 @@ public static class AllocationEngine
     {
         var errors = Validate(study);
         if (!errors.IsEmpty) return new(RunStatus.Invalid, null, errors, []);
+        if (study.BalancedBwCages) return BalancedBwAllocation.Run(study, seed, cancellation, progress);
+        if (study.CompactCages) return CompactCageAllocation.Run(study, seed, cancellation, progress);
+        if (study.SexMode != SexAllocationMode.Ignore) return SexAllocation.Run(study, seed, cancellation, progress);
         var traces = ImmutableArray.CreateBuilder<AttemptTrace>();
         try
         {
@@ -174,6 +211,7 @@ public static class AllocationEngine
         var pens = result.Positions.GroupBy(x => (x.TreatmentIndex, x.Replicate)).ToArray();
         if (pens.Length != s.Treatments.Length * s.Replicates || pens.Any(g => g.Count() != s.AnimalsPerPen))
             throw new ArgumentException("Allocation pen counts are invalid.");
+        SexAllocation.RequireComposition(s, result.Positions);
         var metrics = Statistics(s, result.Positions);
         if (!metrics.Pens.SequenceEqual(result.Pens) || !metrics.Blocks.SequenceEqual(result.Blocks)
             || (s.FilterBalance && metrics.Blocks.Any(x => !Passes(x.CvPercent, s.CvLimitPercent))))
@@ -191,10 +229,16 @@ public static class AllocationEngine
         // Membership provenance stays with each animal; only its current assignment moves.
         positions[a] = oldA with { TreatmentIndex = oldB.TreatmentIndex, Replicate = oldB.Replicate, Block = oldB.Block };
         positions[b] = oldB with { TreatmentIndex = oldA.TreatmentIndex, Replicate = oldA.Replicate, Block = oldA.Block };
-        var candidate = positions.ToImmutableArray(); var metrics = Statistics(s, candidate);
+        var candidate = positions.ToImmutableArray(); SexAllocation.RequireComposition(s, candidate); var metrics = Statistics(s, candidate);
         if (s.FilterBalance && metrics.Blocks.Any(x => !Passes(x.CvPercent, s.CvLimitPercent))) throw new InvalidOperationException("Swap would violate an enabled BW balance limit.");
-        return result with { Positions = candidate, Pens = metrics.Pens, Blocks = metrics.Blocks,
-            Edits = result.Edits.Add(new(first, second, reason.Trim(), oldA, oldB, positions[a], positions[b])), Revision = result.Revision + 1 };
+        return result with
+        {
+            Positions = candidate,
+            Pens = metrics.Pens,
+            Blocks = metrics.Blocks,
+            Edits = result.Edits.Add(new(first, second, reason.Trim(), oldA, oldB, positions[a], positions[b])),
+            Revision = result.Revision + 1
+        };
     }
 
     public static Allocation MapPens(Study s, Allocation result, ImmutableArray<PhysicalPen> physical, ulong seed)

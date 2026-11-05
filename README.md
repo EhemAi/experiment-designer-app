@@ -2,7 +2,7 @@
 
 ## Download for Windows
 
-**[Download Experiment Designer v1.1.2 for Windows (64-bit, 77 MB)](https://github.com/EhemAi/experiment-designer-app/releases/download/v1.1.2/Experiment-Designer-1.1.2-win-x64.zip)**
+**[Download Experiment Designer v1.1.5 for Windows (64-bit)](https://github.com/EhemAi/experiment-designer-app/releases/download/v1.1.5/Experiment-Designer-1.1.5-win-x64.zip)**
 
 Ready to run. No GitHub account, coding tools, or separate .NET installation needed.
 
@@ -12,13 +12,31 @@ Ready to run. No GitHub account, coding tools, or separate .NET installation nee
 
 [Installation details](#install-and-use) · [All releases and checksums](https://github.com/EhemAi/experiment-designer-app/releases)
 
-Experiment Designer 1.1.2 is a Windows desktop application for reproducible animal
+Experiment Designer 1.1.5 is a Windows desktop application for reproducible animal
 allocation in poultry, swine and other livestock trials. Researchers can prepare
 pen or cage labels before animals arrive, import animal IDs and body weights,
 generate seeded allocations, review baseline balance, and export Excel or print
 reports. Prepared treatment locations stay fixed when animal allocation is repeated.
 
 ![Synthetic study in the desktop app](docs/screenshots/study.png)
+
+## Version 1.1.5
+
+- Choose Ignore sex, Balance sexes or Separate sexes, with explicit pen counts
+  and two replicate-group compositions where needed. Unknown sex is allowed
+  when ignored; it cannot fill a required male/female slot.
+- Heaviest-first selection follows your specified sex requirements. RCBD uses
+  ranked BW subgroups to give pens comparable weight distributions and matched
+  means within each block. Candidate search targets 0.5% block CV and compares
+  pen ranges; unattainable targets are reported. Available weights and sex
+  requirements still limit achievable uniformity.
+- Existing male/female block order and prepared treatment locations are retained.
+  Historical allocations keep their original algorithm and saved results.
+- BW entry, display and export impose no unit. New imports retain entered numbers;
+  previously saved values and earlier conversions stay unchanged.
+- Allocation Excel contains Summary, Movement, Unit BW, Treatment balance and
+  Replicate BW. Swap log appears only when used. Prepared Excel contains Layout.
+  Numeric old pen values sort numerically where identity can be preserved safely.
 
 ## Install and use
 
@@ -33,7 +51,7 @@ Extract the complete ZIP before running or installing the app.
 - Windows Installed apps and Start contain the installed app. Save studies outside
   the installation folder; uninstall preserves unknown or modified user files.
 
-The binaries are unsigned. Check the download source and SHA-256 checksum. See
+The binaries are unsigned. Choose a shorter installation folder if Windows shortcut path validation requests it. Check the download source and SHA-256 checksum. See
 [SECURITY.md](SECURITY.md) and the included offline [User guide](User%20guide.html).
 
 Example: create three treatments with four replicates and four animals per pen.
@@ -110,17 +128,18 @@ local developer tools are excluded from source and release archives.
 
 ## Cite
 
-Emmanuel O. Alagbe. *Experiment Designer*, version 1.1.2 (2026).
-Affiliations supplied by the author: Purdue University; The Ohio State University.
+Emmanuel O. Alagbe. *Experiment Designer*, version 1.1.5 (2026).
+Affiliations: Purdue University; The Ohio State University.
 [ORCID: 0000-0002-0747-2866](https://orcid.org/0000-0002-0747-2866).
-See [CITATION.cff](CITATION.cff) for machine-readable citation metadata.
+Please cite the exact software version used in your research, publications,
+reports or presentations. See [CITATION.cff](CITATION.cff).
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23698896.svg)](https://doi.org/10.5281/zenodo.23698896)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23698895.svg)](https://doi.org/10.5281/zenodo.23698895)
 
-[Version 1.1.2 DOI](https://doi.org/10.5281/zenodo.23698896) ·
 [All versions (concept DOI)](https://doi.org/10.5281/zenodo.23698895).
-The Zenodo record archives the released source; the Windows installer/portable ZIP
-is available from [GitHub Releases](https://github.com/EhemAi/experiment-designer-app/releases/tag/v1.1.2).
+The version-specific DOI is added after Zenodo archives this release. The Zenodo
+record archives source; the ready-to-run Windows installer/portable ZIP is on
+[GitHub Releases](https://github.com/EhemAi/experiment-designer-app/releases/tag/v1.1.5).
 
 ## Contribute, security and license
 
