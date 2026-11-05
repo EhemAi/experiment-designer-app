@@ -134,11 +134,11 @@ Affiliations: Purdue University; The Ohio State University.
 Please cite the exact software version used in your research, publications,
 reports or presentations. See [CITATION.cff](CITATION.cff).
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23698895.svg)](https://doi.org/10.5281/zenodo.23698895)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23967124.svg)](https://doi.org/10.5281/zenodo.23967124)
 
+[Version 1.1.5 DOI](https://doi.org/10.5281/zenodo.23967124) ·
 [All versions (concept DOI)](https://doi.org/10.5281/zenodo.23698895).
-The version-specific DOI is added after Zenodo archives this release. The Zenodo
-record archives source; the ready-to-run Windows installer/portable ZIP is on
+The Zenodo record archives source; the ready-to-run Windows installer/portable ZIP is on
 [GitHub Releases](https://github.com/EhemAi/experiment-designer-app/releases/tag/v1.1.5).
 
 ## Contribute, security and license
