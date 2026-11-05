@@ -4,18 +4,17 @@
 
 | Version | Security fixes |
 | --- | --- |
-| 1.1.2 | Current supported line |
+| 1.1.5 | Current supported line |
 | Earlier releases | Upgrade to the current supported release |
 
-Use the security-prepared public release and its checksum when available. The
-older development ZIP with the same app version contains an older bundled
-runtime. Runtime updates require a new reviewed distribution.
+Use the current public release and verify its SHA-256 checksum. Runtime updates
+require a new reviewed distribution. Older releases remain available for
+reproducibility; use the current supported version for new work.
 
 ## Private reports
 
 Use [GitHub private vulnerability reporting](https://github.com/EhemAi/experiment-designer-app/security/advisories/new).
-This channel must be enabled by the maintainer before public launch. If it is
-unavailable, contact the maintainer through the contact details on
+If this channel is unavailable, contact the maintainer through the contact details on
 [EhemAi's GitHub profile](https://github.com/EhemAi) to arrange a private channel.
 Do not post a vulnerability, credentials or study data in a public issue.
 

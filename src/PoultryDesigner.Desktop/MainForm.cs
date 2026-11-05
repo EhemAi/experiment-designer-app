@@ -45,6 +45,7 @@ internal sealed partial class MainForm : Form
     private ChosenRevision? chosen;
     private string? presentedActiveResultId;
     private DataTable treatmentTable = new();
+    private readonly ComboBox sexMode = Ui.Combo(["Ignore sex", "Balance sexes", "Separate sexes"]);
     private sealed record MethodOption(Design Code, string Label) { public override string ToString() => Label; }
     private sealed record RevisionOption(string Id, string Label) { public override string ToString() => Label; }
 
@@ -67,6 +68,18 @@ internal sealed partial class MainForm : Form
         bool rcbd = (design.SelectedItem as MethodOption)?.Code == Design.Rcbd;
         method.Text = rcbd ? "Animals are grouped by body weight before allocation."
             : "Review treatment body-weight summaries after allocation.";
+        method.Text = sexMode.SelectedIndex switch
+        {
+            1 => "Each pen follows your male/female counts.",
+            2 => "Male replicates come first, then female replicates.",
+            _ => method.Text + " Sex is recorded without affecting selection or allocation."
+        };
+        if (rcbd) method.Text = sexMode.SelectedIndex switch
+        {
+            1 => "Ranked BW subgroups balance pen weights within each block while keeping your male/female counts.",
+            2 => "Male replicates come first, then female. Ranked BW subgroups balance pen weights within each block.",
+            _ => "Animals are grouped by body weight into blocks, then ranked subgroups balance weight distributions across pens."
+        };
     }
     private void ApplySetup()
     {
@@ -81,11 +94,17 @@ internal sealed partial class MainForm : Form
             Treatments = trts,
             Replicates = (int)replicates.Value,
             AnimalsPerPen = (int)perPen.Value,
-            FilterBalance = previous.Study.FilterBalance && ((MethodOption)design.SelectedItem!).Code == Design.Rcbd
+            SexMode = (SexAllocationMode)sexMode.SelectedIndex,
+            SexSettings = ReadSexSettings(),
+            CompactCages = false,
+            BalancedBwCages = ((MethodOption)design.SelectedItem!).Code == Design.Rcbd,
+            MaximumAttemptsPerBlock = ((MethodOption)design.SelectedItem!).Code == Design.Rcbd ? Math.Max(30, previous.Study.MaximumAttemptsPerBlock) : previous.Study.MaximumAttemptsPerBlock,
+            FilterBalance = false
         };
         Workspace.Revise(previous with
         {
             Study = study,
+            AutomaticPoolSelection = previous.AutomaticPoolSelection || SexAllocation.UsesSpecifiedCounts(study),
             ExperimentalUnit = (string)unit.SelectedItem!,
             Treatments = trts.Select(t => previous.Treatments.FirstOrDefault(x => x.TreatmentId == t.Id) ?? new TreatmentDetails(t.Id, FactorColumns: [])).ToImmutableArray()
         }, reason);
@@ -133,19 +152,26 @@ internal sealed partial class MainForm : Form
         ShowQuality(snapshot);
         resultLabel.Text = $"{(s.Demonstration ? "Demo · " : "")}Result {a.Revision} · {state}" + (snapshot.Input.Id == Workspace.Document.CurrentInputId ? "" : " · Previous study settings");
         Components.Tip(resultLabel, $"Input revision {snapshot.Input.Number}; allocation seed {a.Seed}; {a.Edits.Length} ordered edits. Full records are available in History.");
+        var animalSex = s.Pool.ToDictionary(x => x.RecordId, x => x.Sex);
         var rows = ResultViews.Movement(s, a); var physical = snapshot.PhysicalPens.ToDictionary(x => x.Id);
-        movement.SetRows(["Animal ID", "Treatment", "Replicate", snapshot.Input.Inputs.ExperimentalUnit == "cage" ? "Cage number" : "Pen number", "BW (g)", "Old location", "New location", "Cohort", "Disposition", "Record ID"], rows.Length, i =>
+        movement.SetRows(["Animal ID", "Treatment", "Replicate", snapshot.Input.Inputs.ExperimentalUnit == "cage" ? "Cage number" : "Pen number", "BW", "Old location", "New location", "Cohort", "Disposition", "Record ID", "Sex"], rows.Length, i =>
         {
             var r = rows[i]; return [r.AnimalId, r.TreatmentId, r.Replicate, r.PhysicalPenId, Ui.Number(r.WeightGrams), r.OldLocation,
-                r.PhysicalPenId is null ? r.Disposition == AnimalDisposition.Allocated ? "Unmapped" : "" : physical[r.PhysicalPenId].Location, r.Cohort, r.Disposition, r.RecordId];
+                r.PhysicalPenId is null ? r.Disposition == AnimalDisposition.Allocated ? "Unmapped" : "" : physical[r.PhysicalPenId].Location, r.Cohort, r.Disposition, r.RecordId, animalSex[r.RecordId].ToString()];
         });
         movement.Grid.Columns["Record ID"]!.Visible = false;
-        pens.SetRows(["Treatment", "Unit replicate", "Animals", "Total BW (g)", "Mean BW (g)", "Sample SD (g)"], a.Pens.Length, i =>
+        var unitSex = a.Positions.GroupBy(x => (x.TreatmentIndex, x.Replicate)).ToDictionary(g => g.Key,
+            g => g.GroupBy(x => animalSex[x.AnimalRecordId]).ToDictionary(x => x.Key, x => x.Count()));
+        var weightByRecord = s.Pool.ToDictionary(x => x.RecordId, x => x.WeightGrams);
+        var unitRanges = a.Positions.GroupBy(x => (x.TreatmentIndex, x.Replicate)).ToDictionary(g => g.Key,
+            g => (Minimum: g.Min(x => weightByRecord[x.AnimalRecordId]), Maximum: g.Max(x => weightByRecord[x.AnimalRecordId])));
+        pens.SetRows(["Treatment", "Unit replicate", "Animals", "Mean BW", "Min BW", "Max BW", "Sample SD", "Male", "Female", "Unknown", "Total BW"], a.Pens.Length, i =>
         {
-            var p = a.Pens[i]; return [s.Treatments[p.TreatmentIndex].Label, p.Replicate, p.Count, Ui.Number(p.TotalWeightGrams), Ui.Number(p.MeanWeightGrams), p.SampleSdGrams?.ToString("G6") ?? "n.a."];
+            var p = a.Pens[i]; var counts = unitSex[(p.TreatmentIndex, p.Replicate)]; var range = unitRanges[(p.TreatmentIndex, p.Replicate)];
+            return [s.Treatments[p.TreatmentIndex].Label, p.Replicate, p.Count, Ui.Number(p.MeanWeightGrams), Ui.Number(range.Minimum), Ui.Number(range.Maximum), p.SampleSdGrams?.ToString("G6") ?? "n.a.", counts.GetValueOrDefault(AnimalSex.Male), counts.GetValueOrDefault(AnimalSex.Female), counts.GetValueOrDefault(AnimalSex.Unknown), Ui.Number(p.TotalWeightGrams)];
         });
         var overview = ResultViews.Balance(s, a);
-        balance.SetRows(["Treatment", "Unit replicates", "Mean BW (g)", "Min pen mean", "Max pen mean", "CV of pen means (%)", "Difference (g)"], overview.Treatments.Length, i =>
+        balance.SetRows(["Treatment", "Unit replicates", "Mean BW", "Min pen mean", "Max pen mean", "CV of pen means (%)", "Difference"], overview.Treatments.Length, i =>
         {
             var b = overview.Treatments[i]; return [b.Label, b.PenCount, Ui.Number(b.MeanWeightGrams), Ui.Number(b.MinimumPenMeanGrams), Ui.Number(b.MaximumPenMeanGrams), b.CvOfPenMeansPercent.ToString("G6"), Ui.Number(b.DifferenceFromOverallGrams)];
         });
@@ -224,7 +250,7 @@ internal sealed partial class MainForm : Form
         {
             var input = Workspace.Inputs; var study = input.Study;
             design.SelectedItem = design.Items.Cast<MethodOption>().Single(x => x.Code == study.Design); unit.SelectedItem = input.ExperimentalUnit;
-            replicates.Value = study.Replicates; perPen.Value = study.AnimalsPerPen;
+            replicates.Value = study.Replicates; perPen.Value = study.AnimalsPerPen; sexMode.SelectedIndex = (int)study.SexMode; LoadSexSettings(study);
             treatmentTable = new DataTable(); treatmentTable.Columns.Add("Treatment ID"); treatmentTable.Columns.Add("Label");
             foreach (var t in study.Treatments) treatmentTable.Rows.Add(t.Id, t.Label); treatments.DataSource = treatmentTable;
             if (treatments.Columns.Contains("Order")) treatments.Columns.Remove("Order");
@@ -277,10 +303,10 @@ internal sealed partial class MainForm : Form
         stage = index; for (int i = 0; i < stages.Length; i++) { stages[i].Visible = i == index; ((StyledButton)navigation.Controls[i]).Primary = i == index; navigation.Controls[i].Invalidate(); }
         title.Text = new[] { "Study configuration", "Animal selection", "Allocation", "Project history" }[index];
         subtitle.Text = new[] { "Set the experimental unit and ordered treatments. Every allocation follows these settings.",
-            "Review the complete pool and make an explicit choice for each record. Body weight is in grams.",
+            "Review the complete pool and make an explicit choice for each record.",
             "Use a recorded seed, review BW balance, and keep every successful revision.", "Trace source observations, input changes, allocation attempts, and manual edits." }[index];
         guideTitle.Text = new[] { "A clear starting point", "Your selection matters", "Reproducible by design", "History stays intact" }[index];
-        guide.Text = new[] { "BW is in grams. The pen or cage is the experimental unit.", "Highlight the exact records you want to include or exclude. Pending choices prevent allocation.",
+        guide.Text = new[] { "Use consistent BW values. The pen or cage is the experimental unit.", "Highlight the exact records you want to include or exclude. Pending choices prevent allocation.",
             "Failure or cancellation retains the previous completed result. All views use the chosen revision.", "Sources, inputs, failed attempts and edits remain recoverable from saved checkpoints." }[index];
         RefreshPresentation();
     }
@@ -324,7 +350,13 @@ internal sealed partial class MainForm : Form
         ulong housingSeed = 0;
         Guard(() =>
         {
-            FlushDrafts(); value = Ui.Seed(seed.Text); reason = "Generate allocation";
+            FlushDrafts();
+            if (Workspace.Inputs.Study.Design == Design.Rcbd && !Workspace.Inputs.Study.BalancedBwCages)
+            {
+                var input = Workspace.Inputs;
+                Workspace.Revise(input with { Study = input.Study with { CompactCages = false, BalancedBwCages = true, FilterBalance = false, MaximumAttemptsPerBlock = Math.Max(30, input.Study.MaximumAttemptsPerBlock) } }, "Balance ranked BW subgroups");
+            }
+            value = Ui.Seed(seed.Text); reason = "Generate allocation";
             if (!Workspace.IsReady) throw new ArgumentException(Workspace.Inputs.AutomaticPoolSelection ? "Complete valid settings and import enough animals to fill the study." : "Complete valid settings and commit an exact selection first.");
             var plan = Workspace.Inputs.PreparedLayout;
             if (plan is null)

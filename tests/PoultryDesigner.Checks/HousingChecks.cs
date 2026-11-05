@@ -35,7 +35,7 @@ internal static class HousingChecks
             string html = Path.Combine(dir, design + "-" + unit + "-prepared.html"), xlsx = Path.ChangeExtension(html, ".xlsx");
             ReportExport.Html(sheets, html, true); ReportExport.Excel(sheets, xlsx, true);
             Check(File.ReadAllText(html).Contains("Allotment sheets") && File.ReadAllText(html).Contains("Housing labels"), "Preparation sheets and labels included in HTML");
-            using (var zip = ZipFile.OpenRead(xlsx)) Check(zip.GetEntry("xl/worksheets/sheet3.xml") is not null, "Preparation Excel contains labels worksheet");
+            using (var zip = ZipFile.OpenRead(xlsx)) Check(zip.GetEntry("xl/worksheets/sheet1.xml") is not null && zip.GetEntry("xl/worksheets/sheet2.xml") is null, "Preparation Excel contains only the Layout worksheet");
             var source = DataImport.Read(Encoding.UTF8.GetBytes("ID,BW\n" + string.Join("\n", Enumerable.Range(1, 24).Select(i => $"A{i},{100 + i}"))), "allocation-day.csv");
             var imported = DataImport.Animals(source, "Delimited", 1, 2, 25, new(1, 2)).Value!;
             restored.ImportAnimals(source, imported, false, "Allocation day import"); restored.SelectExactPool("Include all imported animals");

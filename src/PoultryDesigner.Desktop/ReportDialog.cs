@@ -6,6 +6,7 @@ namespace PoultryDesigner.Desktop;
 internal sealed class ReportDialog : Form
 {
     private AllocationReport report;
+    private readonly AllocationReport? preparedExcel;
     private readonly string[] protectedPaths;
     private readonly Label message = Ui.Label("Export or print the chosen revision. All records are included.");
     private readonly FlowLayoutPanel actions;
@@ -23,7 +24,7 @@ internal sealed class ReportDialog : Form
         var heading = reportHeading = Ui.Label("Allocation reports"); heading.Font = Theme.Heading(18); heading.Name = "report-heading";
         heading.Margin = Padding.Empty; heading.Padding = new(4, 6, 4, 6);
         var context = Ui.Label(report.Context);
-        var detail = Ui.Label("Excel: summary, movement, unit BW with treatment ANOVA, treatment balance, physical map and swap log.\nPrint: movement, summaries and ANOVA. PDF uses Microsoft Print to PDF.\nExports are snapshots. Save pending project changes separately.");
+        var detail = Ui.Label("Excel: summary, movement, unit BW with treatment ANOVA, treatment balance and replicate BW. A swap log is included when swaps exist.\nPrint: movement, summaries and ANOVA. PDF uses Microsoft Print to PDF.\nExports are snapshots. Save pending project changes separately.");
         actions = Ui.Bar(Ui.Button("Export Excel", () => _ = ExportAsync(true)), Ui.Button("Export printable HTML", () => _ = ExportAsync(false)),
             Ui.Button("Print preview", () => Print(true)), Ui.Button("Print / PDF", () => Print(false)));
         ((StyledButton)actions.Controls[0]).Primary = true;
@@ -33,8 +34,9 @@ internal sealed class ReportDialog : Form
         bool prepared = !report.Tables.Any(t => t.Name == "Movement");
         if (prepared)
         {
-            order.Items.Clear(); order.Items.Add("All preparation sheets"); order.Items.AddRange(original.Tables.Select(t => (object)t.Name).ToArray()); order.SelectedIndex = 0;
-            heading.Text = "Prepared layout"; detail.Text = "Choose the layout, blank allotment sheets or housing labels to export or print. Animal IDs and body weights will be filled on allocation day. Save the project to retain these treatment locations."; message.Text = "No animals have been allocated in these preparation sheets.";
+            order.Items.Clear(); order.Items.Add("All print views"); order.Items.AddRange(original.Tables.Select(t => (object)t.Name).ToArray()); order.SelectedIndex = 0;
+            preparedExcel = LayoutReports.ForExcel(original);
+            heading.Text = "Prepared layout"; detail.Text = "Excel exports only the Layout sheet. Choose a print view below for the layout, blank allotment sheets or housing labels. Save the project to retain these treatment locations."; message.Text = "No animals have been allocated in these preparation sheets.";
         }
         order.SelectedIndexChanged += (_, _) => report = prepared ? order.SelectedIndex == 0 ? original
             : original with { Tables = [original.Tables[order.SelectedIndex - 1]] } : AllocationReports.SortMovement(original, (MovementOrder)order.SelectedIndex);
@@ -50,7 +52,7 @@ internal sealed class ReportDialog : Form
         layout.ColumnStyles.Add(new(SizeType.Percent, 100));
         for (int i = 0; i < 6; i++) layout.RowStyles.Add(new(SizeType.AutoSize));
         layout.Controls.Add(heading, 0, 0); layout.Controls.Add(context, 0, 1); layout.Controls.Add(detail, 0, 2);
-        layout.Controls.Add(Ui.Bar(Ui.Label(prepared ? "Print / export" : "Movement order"), order), 0, 3); layout.Controls.Add(actions, 0, 4);
+        layout.Controls.Add(Ui.Bar(Ui.Label(prepared ? "Print view" : "Movement order"), order), 0, 3); layout.Controls.Add(actions, 0, 4);
         layout.Controls.Add(message, 0, 5);
         foreach (var label in new[] { heading, context, detail, message }) { label.AutoSize = true; label.Dock = DockStyle.Top; }
         layout.SizeChanged += (_, _) =>
@@ -79,7 +81,7 @@ internal sealed class ReportDialog : Form
         string path = Path.GetFullPath(dialog.FileName);
         if (protectedPaths.Contains(path, StringComparer.OrdinalIgnoreCase)) { message.Text = "Choose a new report file. Original sources and project files cannot be overwritten by exports."; return; }
         working = true; actions.Enabled = false; message.Text = "Writing complete chosen-revision export...";
-        try { await Task.Run(() => { if (excel) ReportExport.Excel(report, path, true); else ReportExport.Html(report, path, true, Path.Combine(AppContext.BaseDirectory, "Assets", "Fonts")); }); message.Text = "Saved: " + path; }
+        try { await Task.Run(() => { if (excel) ReportExport.Excel(preparedExcel ?? report, path, true); else ReportExport.Html(report, path, true, Path.Combine(AppContext.BaseDirectory, "Assets", "Fonts")); }); message.Text = "Saved: " + path; }
         catch (Exception ex) { message.Text = "Export failed: " + ex.Message; }
         finally { working = false; actions.Enabled = true; }
     }
@@ -99,6 +101,7 @@ internal sealed class ReportDialog : Form
         catch (Exception ex) { message.Text = "Printing unavailable: " + ex.Message + ". You can export printable HTML and print it in a browser."; }
     }
     internal AllocationReport ReportForSmoke => report;
+    internal AllocationReport ExcelReportForSmoke => preparedExcel ?? report;
     internal ComboBox ChoiceForSmoke => order;
     internal Label HeadingForSmoke => reportHeading;
     internal static PrintPreviewDialog Preview(System.Drawing.Printing.PrintDocument document)

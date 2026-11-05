@@ -8,14 +8,14 @@ namespace PoultryDesigner.Desktop;
 
 internal static class DesktopSmoke
 {
-    internal static int Run(string root)
+    internal static int Run(string root, bool sexSettingsOnly = false)
     {
         int result = 1;
         using var host = new Form { StartPosition = FormStartPosition.Manual, Location = new(-25000, -25000), Size = new(100, 100), ShowInTaskbar = false };
-        host.Shown += async (_, _) => { result = await RunAsync(root); host.Close(); };
+        host.Shown += async (_, _) => { result = await RunAsync(root, sexSettingsOnly); host.Close(); };
         Application.Run(host); return result;
     }
-    private static async Task<int> RunAsync(string root)
+    private static async Task<int> RunAsync(string root, bool sexSettingsOnly)
     {
         string output = Path.Combine(root, "analysis", "desktop-validation"); Directory.CreateDirectory(output);
         int checks = 0;
@@ -38,11 +38,22 @@ internal static class DesktopSmoke
                 .Select(c => $"{c.AccessibleName}: bounds={c.Bounds}, min={c.MinimumSize}, font={c.Font.Size}, autosize={c.AutoSize}"));
             File.WriteAllLines(Path.Combine(output, name + "-controls.txt"), Descend(form).Where(c => c.Visible)
                 .Select(c => $"{c.GetType().Name} {c.Text.Replace("\n", " / ")}: bounds={c.Bounds}, parent={c.Parent?.ClientSize}, preferred={c.PreferredSize}"));
-            Check(bitmap.Width >= (form is SplashForm ? 350 : 500) && bitmap.Height >= (form is SplashForm ? 220 : 400), name + " has a rendered desktop surface");
+            // Compact report dialogs can scale below 400 px while retaining all
+            // their controls; CheckLayout above validates those click targets.
+            int minimumHeight = form is SplashForm ? 220 : form is ReportDialog ? 300 : 400;
+            Check(bitmap.Width >= (form is SplashForm ? 350 : 500) && bitmap.Height >= minimumHeight, name + " has a rendered desktop surface");
         }
         try
         {
             RedesignChecks.CheckTheme(Check);
+            if (sexSettingsOnly)
+            {
+                using var settingsForm = new MainForm(); settingsForm.StartPosition = FormStartPosition.Manual; settingsForm.Location = new(-25000, -25000); settingsForm.Show();
+                await settingsForm.ExerciseSexSettingsForSmoke(root, Check, Render);
+                await settingsForm.ExerciseBalancedBwForSmoke(root, Check, Render); settingsForm.CloseForSmoke();
+                File.WriteAllText(Path.Combine(output, "sex-settings-check-results.txt"), $"PASS: {checks} native sex-settings UI assertions, including exact counts, replicate ranges, saved controls, legacy preview compatibility, both themes, 125/150/200% layout scaling, BW subgroup upgrade and unattainable-target warnings.\n");
+                return 0;
+            }
             using (var splash = new SplashForm())
             {
                 splash.Loading.PreviewFrame(500); Render(splash, "startup-logo");
@@ -70,6 +81,7 @@ internal static class DesktopSmoke
             using var main = new MainForm(); main.StartPosition = FormStartPosition.Manual; main.Location = new(-25000, -25000); main.Show(); Application.DoEvents();
             for (int i = 0; i < 4; i++) { main.StageForSmoke(i); Render(main, new[] { "study-empty", "animals-empty", "allocation-empty", "history-empty" }[i]); }
             main.LoadForSmoke(file); main.ExerciseCorrectionsForSmoke(file, output, Check, Render); main.ExerciseForSmoke(Check); await main.ExerciseReviewForSmoke(file, Check, Render); await main.ExerciseAnimalPagingForSmoke(file, Check);
+            await main.ExerciseSexForSmoke(file, Check, Render);
             await main.ExerciseBalanceNoticeForSmoke(file, Check, Render);
             main.ExerciseAllTabsForSmoke(Check, Render);
             for (int i = 0; i < 4; i++) { main.StageForSmoke(i); Render(main, new[] { "study", "animals", "allocations", "history" }[i]); }

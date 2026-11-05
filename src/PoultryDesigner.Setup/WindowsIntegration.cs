@@ -57,8 +57,17 @@ internal sealed class WindowsIntegration(string registryName, string programs, s
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         WithLink(path, link => { link.TargetPath = target; link.WorkingDirectory = Path.GetDirectoryName(target); link.Description = "Experiment Designer"; link.IconLocation = target + ",0"; link.Save(); });
     }
+    // Windows shell shortcuts and the bundled native font loader have MAX_PATH
+    // limits even when .NET can copy longer files. Reject these roots up front.
+    internal static void ValidateRoot(string root, string version)
+    {
+        string target = Path.Combine(Path.GetFullPath(root), "releases", version + "-" + new string('0', 32), "App", "PoultryDesigner.Desktop.exe");
+        string fonts = Path.Combine(Path.GetFullPath(root), "releases", version + "-" + new string('0', 32), "App", "Assets", "Fonts", "Manrope-SemiBold.otf");
+        if (Math.Max(target.Length, fonts.Length) >= 260) throw new ArgumentException("Choose a shorter installation folder. The resulting Windows shortcut or font path is too long.");
+    }
     internal void Register(string package, string root, InstallReceipt receipt, bool desktopShortcut)
     {
+        ValidateRoot(root, receipt.Version);
         root = Path.GetFullPath(root);
         using (var existing = Registry.CurrentUser.OpenSubKey(RegistryPath))
             if (existing is not null && !string.Equals(existing.GetValue("InstallLocation") as string, root, StringComparison.OrdinalIgnoreCase)) throw new IOException("Another Experiment Designer installation is registered. Its entry was preserved.");
@@ -160,7 +169,11 @@ internal sealed class WindowsIntegration(string registryName, string programs, s
     internal static int Check(string package, string workspace)
     {
         int checks = 0; void Check(bool pass, string label) { checks++; if (!pass) throw new Exception(label); }
-        string fixture = Path.Combine(workspace, "analysis", "windows-integration", Guid.NewGuid().ToString("N"));
+        string fixture = Path.Combine(Path.GetTempPath(), "ExperimentDesigner-integration-" + Guid.NewGuid().ToString("N"));
+        string tooLong = Path.Combine(fixture, new string('x', 200));
+        bool rejectedLongPath = false;
+        try { ValidateRoot(tooLong, Installation.ReadPackage(package).Version); } catch (ArgumentException) { rejectedLongPath = true; }
+        Check(rejectedLongPath && !Directory.Exists(tooLong), "Overlong shortcut roots are rejected before creating an installation");
         string root = Path.Combine(fixture, "Installed app with spaces – Unicode");
         var integration = new WindowsIntegration("ExperimentDesigner.Test-" + Guid.NewGuid().ToString("N"), Path.Combine(fixture, "Programs"), Path.Combine(fixture, "Desktop"));
         var receipt = Installation.Install(package, root);

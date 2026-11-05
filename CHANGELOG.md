@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.1.5] - 2026-11-04
+
+### Added
+- Optional sex import/entry, normalized Male/Female/Unknown values, filtering and reports.
+- Ignore, Balance and Separate sex allocation, explicit pen composition and two replicate groups.
+- Ranked BW subgroup RCBD search: comparable pen distributions, matched means, range comparison and an automatic 0.5% block CV target with visible unattainable-target feedback.
+- Replicate BW export and pen minimum/maximum BW alongside means and SD.
+
+### Fixed
+- Reject overlong Windows shortcut/font paths before installation, avoiding silent shortcut truncation and native font-loading failures.
+
+### Changed
+- Heaviest-first selection respects specified sex counts without adding light EX animals for balance.
+- New RCBD runs record their grouping rule while historical algorithms/results replay unchanged.
+- New BW imports retain entered numbers; UI and report labels impose no measurement unit.
+- Canonical numeric old-pen values export numerically; leading-zero and precision-sensitive codes retain identity.
+- Prepared Excel contains only Layout; result Excel omits Physical map and unused Swap log.
+- Preserve fixed prepared treatment locations across reruns and existing male/female block order.
+
 ## 1.1.2 — public release candidate
 
 - Numeric treatment IDs use numeric Excel cells across allocation and prepared-layout sheets; identity-sensitive IDs retain exact text.

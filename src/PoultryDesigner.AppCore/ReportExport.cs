@@ -13,6 +13,7 @@ public static class ReportExport
     private const string RelNs = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     public static void Excel(AllocationReport report, string path, bool overwrite = false)
     {
+        report = LayoutReports.ForExcel(report);
         Validate(report);
         Atomic(path, ".xlsx", overwrite, stream => {
             using var zip = new ZipArchive(stream, ZipArchiveMode.Create, true);

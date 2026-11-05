@@ -10,10 +10,10 @@ internal sealed partial class MainForm
         BuildAnimalColumns();
         search.PlaceholderText = "Animal ID / Record ID / cohort"; search.Width = 250;
         foreach (var combo in new[] { cohortFilter, locationFilter, sourceFilter }) combo.Items.Add("All");
-        foreach (var combo in new[] { decisionFilter, cohortFilter, locationFilter, sourceFilter }) { combo.SelectedIndex = 0; combo.Width = 145; }
+        foreach (var combo in new[] { decisionFilter, cohortFilter, locationFilter, sourceFilter, sexFilter }) { combo.SelectedIndex = 0; combo.Width = 145; }
         var controls = Ui.Bar(Ui.Button("Import animals", () => Import(true)), Ui.Button("Enter animals", EnterAnimals), Ui.Label("Find"), search, decisionFilter, animalDetails);
         animalDetails.CheckedChanged += (_, _) => ApplyAnimalDetails();
-        var filters = Ui.Bar(Ui.Label("Cohort"), cohortFilter, Ui.Label("Source"), sourceFilter, Ui.Label("Location"), locationFilter);
+        var filters = Ui.Bar(Ui.Label("Cohort"), cohortFilter, Ui.Label("Source"), sourceFilter, Ui.Label("Location"), locationFilter, Ui.Label("Sex"), sexFilter, sexCounts);
         decisionActions = Ui.Bar(selectedRows, Ui.Button("Include", () => ChangeHighlighted(SelectionChoice.Include)),
             Ui.Button("Exclude", () => ChangeHighlighted(SelectionChoice.Exclude)), Ui.Button("Clear highlight", () => { CaptureSelection(); checkedAnimals.Clear(); RenderAnimals(); }), Ui.Button("Edit record", EditAnimal));
         decisionActions.Visible = true;
@@ -32,7 +32,7 @@ internal sealed partial class MainForm
         animalNoResults = Components.Empty("No animals match these filters", "Clear the filters to return to the complete source pool. No selection decisions have been changed.", Ui.Button("Clear filters", ClearAnimalFilters));
         stages[1].Controls.Add(animals); stages[1].Controls.Add(animalEmpty); stages[1].Controls.Add(animalNoResults); stages[1].Controls.Add(top); stages[1].Controls.Add(footer);
         search.TextChanged += (_, _) => { if (!loading) { CaptureSelection(); FilterAnimals(); } };
-        foreach (var combo in new[] { decisionFilter, cohortFilter, locationFilter, sourceFilter }) combo.SelectedIndexChanged += (_, _) => { if (!loading) { CaptureSelection(); FilterAnimals(); } };
+        foreach (var combo in new[] { decisionFilter, cohortFilter, locationFilter, sourceFilter, sexFilter }) combo.SelectedIndexChanged += (_, _) => { if (!loading) { CaptureSelection(); FilterAnimals(); } };
         animals.SelectionChanged += (_, _) => { if (!loading) RefreshHighlighted(); };
         animals.CellContentClick += (_, e) => { if (e.ColumnIndex >= 0 && animals.Columns[e.ColumnIndex].Name == "Decision") ShowAnimalDecisionMenu(e.RowIndex); };
         animals.CellValueChanged += (_, e) =>

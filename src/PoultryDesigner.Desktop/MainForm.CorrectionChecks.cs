@@ -13,9 +13,9 @@ internal sealed partial class MainForm
         var inputs = Workspace.Inputs;
         Workspace.Revise(inputs with { Notes = "Retained historical notes", Study = inputs.Study with { FilterBalance = true, CvLimitPercent = 90, MaximumAttemptsPerBlock = 7 } }, "Preservation fixture");
         Reload(); ApplySetup();
-        check(Workspace.Inputs.Notes == "Retained historical notes" && Workspace.Inputs.Study.FilterBalance
-            && Workspace.Inputs.Study.CvLimitPercent == 90 && Workspace.Inputs.Study.MaximumAttemptsPerBlock == 7
-            && Workspace.Inputs.Study.Demonstration == inputs.Study.Demonstration, "Simplified setup preserves saved balancing settings, notes and demonstration policy");
+        check(Workspace.Inputs.Notes == "Retained historical notes" && !Workspace.Inputs.Study.FilterBalance && Workspace.Inputs.Study.BalancedBwCages && !Workspace.Inputs.Study.CompactCages
+            && Workspace.Inputs.Study.CvLimitPercent == 90 && Workspace.Inputs.Study.MaximumAttemptsPerBlock == 30
+            && Workspace.Inputs.Study.Demonstration == inputs.Study.Demonstration, "Setup uses ranked BW balancing while retaining the historical CV value and ensuring at least 30 candidate attempts, notes and demonstration policy");
         Restore(); SetStage(1); search.Text = "B0";
         var document = Workspace.Document; var binding = animals.DataSource; var before = Theme.IsDark;
         perPen.Value++; int draft = (int)perPen.Value; var selectionBefore = selection.ToArray();

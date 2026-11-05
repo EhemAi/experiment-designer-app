@@ -6,6 +6,11 @@ internal static class Program
     private static int Main(string[] args)
     {
         ApplicationConfiguration.Initialize();
+        if (args.Length == 2 && args[0] == "--sex-settings-check")
+        {
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
+            return DesktopSmoke.Run(args[1], sexSettingsOnly: true);
+        }
         if (args.Length == 2 && args[0] == "--startup-check")
         {
             var launchTime = System.Diagnostics.Stopwatch.StartNew();

@@ -6,22 +6,29 @@ internal static class Section7Checks
 {
     internal static void RunPublished(string package, string workspace)
     {
-        string root = Path.Combine(workspace, "analysis", "installation-validation", "published-" + Guid.NewGuid().ToString("N"));
+        string root = Path.Combine(Path.GetTempPath(), "ExperimentDesigner-published-" + Guid.NewGuid().ToString("N"));
         var receipt = Installation.Install(package, root);
-        string study = Path.Combine(root, "retained-study.poultryproj"); File.WriteAllText(study, "user file preservation fixture");
-        var start = new System.Diagnostics.ProcessStartInfo(Installation.Executable(root, receipt))
+        try
         {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
-        };
-        start.ArgumentList.Add("--smoke"); start.ArgumentList.Add(workspace);
-        start.Environment["DOTNET_ROOT"] = start.Environment["DOTNET_ROOT_X64"] = Path.Combine(root, "absent-global-runtime");
-        using var process = System.Diagnostics.Process.Start(start)!;
-        if (!process.WaitForExit(120000)) { process.Kill(entireProcessTree: true); throw new Exception("Installed apphost workflow checks timed out."); }
-        if (process.ExitCode != 0) throw new Exception("Installed apphost failed native workflow checks.");
-        Installation.Uninstall(root);
-        if (File.ReadAllText(study) != "user file preservation fixture" || Installation.ReadInstalled(root) is not null) throw new Exception("Installed package removal did not preserve the user fixture.");
+            string study = Path.Combine(root, "retained-study.poultryproj"); File.WriteAllText(study, "user file preservation fixture");
+            var start = new System.Diagnostics.ProcessStartInfo(Installation.Executable(root, receipt))
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+            };
+            start.ArgumentList.Add("--smoke"); start.ArgumentList.Add(workspace);
+            start.Environment["DOTNET_ROOT"] = start.Environment["DOTNET_ROOT_X64"] = Path.Combine(root, "absent-global-runtime");
+            using var process = System.Diagnostics.Process.Start(start)!;
+            if (!process.WaitForExit(120000)) { process.Kill(entireProcessTree: true); throw new Exception("Installed apphost workflow checks timed out."); }
+            if (process.ExitCode != 0) throw new Exception("Installed apphost failed native workflow checks.");
+            Installation.Uninstall(root);
+            if (File.ReadAllText(study) != "user file preservation fixture" || Installation.ReadInstalled(root) is not null) throw new Exception("Installed package removal did not preserve the user fixture.");
+        }
+        finally
+        {
+            if (Installation.ReadInstalled(root) is not null) Installation.Uninstall(root);
+        }
         File.WriteAllText(Path.Combine(workspace, "analysis", "package-validation", "installed-app-verification.txt"), "PASS: packaged installation, installed apphost with bundled runtime, native desktop workflow and idle/scroll checks, removal and user-file preservation.\n");
         Console.WriteLine("PASS: packaged installation, installed runtime and removal.");
     }

@@ -109,7 +109,7 @@ internal sealed class ScientificPlot : Control
             TextRenderer.DrawText(e.Graphics, values[i].Label, font, new Rectangle(8, y, labelWidth - 12, height), Theme.Text, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
             int barWidth = maximum == 0 ? 0 : (int)((values[i].Value / maximum) * area);
             if (barWidth > 0) { using var bar = Theme.Round(new(labelWidth, y + 8, barWidth, height - 16), 3); e.Graphics.FillPath(brush, bar); }
-            TextRenderer.DrawText(e.Graphics, values[i].Value.ToString("0.###") + " g", font, new Rectangle(labelWidth + area + 8, y, 98, height), Theme.Text, TextFormatFlags.VerticalCenter);
+            TextRenderer.DrawText(e.Graphics, values[i].Value.ToString("0.###"), font, new Rectangle(labelWidth + area + 8, y, 98, height), Theme.Text, TextFormatFlags.VerticalCenter);
         }
     }
 }

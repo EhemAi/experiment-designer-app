@@ -2,9 +2,8 @@ cff-version: 1.2.0
 message: "If you use Experiment Designer in your research, please cite this software."
 type: software
 title: Experiment Designer
-version: 1.1.2
-doi: 10.5281/zenodo.23698896
-date-released: '2026-10-27'
+version: 1.1.5
+date-released: '2026-11-04'
 license: MIT
 repository-code: https://github.com/EhemAi/experiment-designer-app
 url: https://github.com/EhemAi/experiment-designer-app
@@ -24,3 +23,8 @@ keywords:
   - decision support
   - randomization
   - reproducible research
+
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23698895
+    description: All versions (concept DOI); cite the version-specific DOI when available.

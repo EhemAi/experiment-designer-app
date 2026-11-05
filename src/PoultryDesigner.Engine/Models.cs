@@ -4,12 +4,26 @@ namespace PoultryDesigner.Engine;
 
 public enum Design { Rcbd, Crd, Conventional }
 public sealed record Animal(string RecordId, string AnimalId, decimal WeightGrams,
-    string Cohort = "", string OldLocation = "");
+    string Cohort = "", string OldLocation = "")
+{
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    public AnimalSex Sex { get; init; }
+}
 public sealed record Treatment(string Id, string Label);
 public sealed record Study(Design Design, ImmutableArray<Animal> Pool,
     ImmutableArray<string> SelectedRecordIds, ImmutableArray<Treatment> Treatments,
     int Replicates, int AnimalsPerPen, bool FilterBalance = false,
-    decimal CvLimitPercent = 0.5m, int MaximumAttemptsPerBlock = 30, bool Demonstration = false);
+    decimal CvLimitPercent = 0.5m, int MaximumAttemptsPerBlock = 30, bool Demonstration = false)
+{
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    public SexAllocationMode SexMode { get; init; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public SexAllocationSettings? SexSettings { get; init; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    public bool CompactCages { get; init; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    public bool BalancedBwCages { get; init; }
+}
 public sealed record Position(string AnimalRecordId, int TreatmentIndex, int Replicate, int Block,
     int OriginalSubblock, int OriginalBlock = 0);
 public sealed record PenStatistics(int TreatmentIndex, int Replicate, int Count,

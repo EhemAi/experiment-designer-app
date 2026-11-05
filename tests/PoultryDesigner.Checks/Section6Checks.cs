@@ -35,10 +35,10 @@ internal static class Section6Checks
         }
         ReportTable Table(string name) => report.Tables.Single(x => x.Name == name);
         Check(Table("Movement").Rows.Length == 13, "Complete source pool exported without pagination loss.");
-        Check(report.Tables.Select(t => t.Name).SequenceEqual(new[] { "Summary", "Movement", "Unit BW", "Treatment balance", "Physical map", "Swap log" }), "Result export contains exactly the six requested worksheets");
+        Check(report.Tables.Select(t => t.Name).SequenceEqual(new[] { "Summary", "Movement", "Unit BW", "Treatment balance", "Replicate BW", "Swap log" }), "Edited result export contains the requested summaries and a nonempty swap log");
         Check(Table("Movement").Rows.Count(x => (string?)x[4] == "ResearcherExcluded") == 1, "Exclusions have a distinct disposition.");
         Check(Table("Movement").Rows.Single(x => (string?)x[4] == "ResearcherExcluded")[9] is "", "Excluded record has no invented destination.");
-        Check(Table("Physical map").Rows.Length == 6 && Table("Swap log").Rows.Length == 1, "Complete physical pool and edits reflect the chosen revision.");
+        Check(!report.Tables.Any(t => t.Name == "Physical map") && Table("Swap log").Rows.Length == 1, "Physical map is omitted and actual edits retain their swap log.");
         Check(Table("Unit BW").Rows.Sum(x => (decimal)x[4]!) == chosen.Input.Inputs.Study.Pool.Where(x => chosen.Input.Inputs.Study.SelectedRecordIds.Contains(x.RecordId)).Sum(x => x.WeightGrams), "Export unit totals reconcile to selected animals.");
         Check(Table("Summary").Rows.Single(x => (string?)x[0] == "Allocation seed (exact text)")[1] is "18446744073709551615", "Maximum unsigned seed retained exactly as text.");
         Check(chosen.Input.Inputs.Animals.All(x => x.Origin?.Row >= 2) && chosen.Sources.Single().Sha256 == source.Sha256, "Provenance remains in the project despite being omitted from results");
@@ -64,7 +64,7 @@ internal static class Section6Checks
             Check(move.Descendants(ns + "c").Any(c => c.Attribute("t")?.Value == "inlineStr" && c.Descendants(ns + "t").Any(t => t.Value == "=2+2")), "Formula-like IDs remain literal text.");
             Check(move.Descendants(ns + "c").Any(c => c.Attribute("r")?.Value == "C2" && c.Element(ns + "v") is not null), "BW written as a typed number.");
             var unitSheet = Xml("xl/worksheets/sheet3.xml");
-            Check(unitSheet.Descendants(ns + "c").Single(c => c.Attribute("r")?.Value == "L3").Element(ns + "v") is not null && unitSheet.Descendants(ns + "autoFilter").Single().Attribute("ref")?.Value == "A1:I7", "ANOVA p-value is numeric on the right and outside the sortable unit table");
+            Check(unitSheet.Descendants(ns + "c").Single(c => c.Attribute("r")?.Value == "Q3").Element(ns + "v") is not null && unitSheet.Descendants(ns + "autoFilter").Single().Attribute("ref")?.Value == "A1:N7", "ANOVA p-value is numeric on the right and outside the sortable unit table including sex counts");
             Check(zip.Entries.All(x => !x.FullName.Contains("vba", StringComparison.OrdinalIgnoreCase)), "Macro-free workbook.");
         }
         var read = DataImport.Read(excel); Check(read.Tables.Single(x => x.Name == "Movement").Rows.Length == 14, "Independent engine importer reads all Excel rows.");
@@ -74,7 +74,7 @@ internal static class Section6Checks
         Check(markup.Contains("ResearcherExcluded") && markup.Contains("00001234567890123456789"), "Printable output keeps exclusions and long identities.");
         Check(JsonSerializer.Serialize(w.Document) == document, "Export leaves project, active result and history unchanged.");
         var older = AllocationReports.Create(unmapped, true, true);
-        Check(older.Context.Contains("Historical") && older.Context.Contains("earlier inputs") && older.Tables.Single(x => x.Name == "Physical map").Rows.IsEmpty,
+        Check(older.Context.Contains("Historical") && older.Context.Contains("earlier inputs") && !older.Tables.Any(x => x.Name is "Physical map" or "Swap log"),
             "Historical report uses its own unmapped snapshot and explicit status.");
         Check(older.Tables.Single(x => x.Name == "Movement").Rows.Count(x => x[9] is "Unmapped") == 12, "Unmapped allocated animals remain visible.");
         Reject(() => ReportExport.Excel(report, excel), "Existing output needs explicit overwrite.");
@@ -119,7 +119,7 @@ internal static class Section6Checks
         {
             string path = Path.Combine(output, name); ReportExport.Excel(snapshot, path, true);
             using var zip = ZipFile.OpenRead(path); XNamespace ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
-            foreach (var (table, index) in snapshot.Tables.Select((t, i) => (t, i)).Where(p => p.t.Columns.Any(c => c.Name == "Treatment ID")))
+            foreach (var (table, index) in LayoutReports.ForExcel(snapshot).Tables.Select((t, i) => (t, i)).Where(p => p.t.Columns.Any(c => c.Name == "Treatment ID")))
             {
                 int column = Enumerable.Range(0, table.Columns.Length).Single(i => table.Columns[i].Name == "Treatment ID");
                 Check(table.Rows.Select(r => r[column]).OfType<long>().Distinct().Order().SequenceEqual(new long[] { 2, 10, 2632 }),
