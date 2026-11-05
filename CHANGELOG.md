@@ -9,7 +9,7 @@
 - Replicate BW export and pen minimum/maximum BW alongside means and SD.
 
 ### Fixed
-- Reject overlong Windows shortcut paths before installation, avoiding silent target truncation.
+- Reject overlong Windows shortcut/font paths before installation, avoiding silent shortcut truncation and native font-loading failures.
 
 ### Changed
 - Heaviest-first selection respects specified sex counts without adding light EX animals for balance.

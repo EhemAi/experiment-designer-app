@@ -51,7 +51,7 @@ Extract the complete ZIP before running or installing the app.
 - Windows Installed apps and Start contain the installed app. Save studies outside
   the installation folder; uninstall preserves unknown or modified user files.
 
-The binaries are unsigned. Choose a shorter installation folder if Windows shortcut path validation requests it. Check the download source and SHA-256 checksum. See
+The binaries are unsigned. Choose a shorter installation folder if Windows shortcut/font path validation requests it. Check the download source and SHA-256 checksum. See
 [SECURITY.md](SECURITY.md) and the included offline [User guide](User%20guide.html).
 
 Example: create three treatments with four replicates and four animals per pen.

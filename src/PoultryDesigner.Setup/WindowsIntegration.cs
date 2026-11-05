@@ -57,12 +57,13 @@ internal sealed class WindowsIntegration(string registryName, string programs, s
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         WithLink(path, link => { link.TargetPath = target; link.WorkingDirectory = Path.GetDirectoryName(target); link.Description = "Experiment Designer"; link.IconLocation = target + ",0"; link.Save(); });
     }
-    // WScript.Shell truncates shortcut targets at MAX_PATH even when .NET can
-    // copy longer paths. Reject these roots before installation or registration.
+    // Windows shell shortcuts and the bundled native font loader have MAX_PATH
+    // limits even when .NET can copy longer files. Reject these roots up front.
     internal static void ValidateRoot(string root, string version)
     {
         string target = Path.Combine(Path.GetFullPath(root), "releases", version + "-" + new string('0', 32), "App", "PoultryDesigner.Desktop.exe");
-        if (target.Length >= 260) throw new ArgumentException("Choose a shorter installation folder. The resulting Windows shortcut path is too long.");
+        string fonts = Path.Combine(Path.GetFullPath(root), "releases", version + "-" + new string('0', 32), "App", "Assets", "Fonts", "Manrope-SemiBold.otf");
+        if (Math.Max(target.Length, fonts.Length) >= 260) throw new ArgumentException("Choose a shorter installation folder. The resulting Windows shortcut or font path is too long.");
     }
     internal void Register(string package, string root, InstallReceipt receipt, bool desktopShortcut)
     {
