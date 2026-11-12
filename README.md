@@ -10,7 +10,7 @@ Ready to run. No GitHub account, coding tools, or separate .NET installation nee
 2. Open `Setup/ExperimentDesigner.Setup.exe` to install, or
    `App/ExperimentDesigner.exe` to run without installing.
 
-[Installation details](#install-and-use) Â· [All releases and checksums](https://github.com/EhemAi/experiment-designer-app/releases)
+[Installation details](#install-and-use) · [All releases and checksums](https://github.com/EhemAi/experiment-designer-app/releases)
 
 Experiment Designer 1.1.6 is a Windows desktop application for reproducible animal
 allocation in poultry, swine and other livestock trials. Researchers can prepare
@@ -61,7 +61,7 @@ The binaries are unsigned. Choose a shorter installation folder if Windows short
 [SECURITY.md](SECURITY.md) and the included offline [User guide](User%20guide.html).
 
 Example: create three treatments with four replicates and four animals per pen.
-Prepare housing 101Ã¢â‚¬â€œ112 and print labels. Import at least 48 IDs/weights, generate
+Prepare housing 101–112 and print labels. Import at least 48 IDs/weights, generate
 an allocation, inspect unit mean BW and export. The default pool favors the heaviest
 required animals and records unused animals as EX. History retains earlier results.
 
@@ -140,7 +140,9 @@ Affiliations: Purdue University; The Ohio State University.
 Please cite the exact software version used in your research, publications,
 reports or presentations. See [CITATION.cff](CITATION.cff).
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23698895.svg)](https://doi.org/10.5281/zenodo.23698895)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24175085.svg)](https://doi.org/10.5281/zenodo.24175085)
+
+[Version 1.1.6 DOI](https://doi.org/10.5281/zenodo.24175085).
 
 [All versions (concept DOI)](https://doi.org/10.5281/zenodo.23698895).
 The Zenodo record archives source; the ready-to-run Windows installer/portable ZIP is on
