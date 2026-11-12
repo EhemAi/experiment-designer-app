@@ -253,7 +253,8 @@ public static class DataImport
     public static ImportPreview<TreatmentImport> Treatments(ImportSource source, string table, int header, int first, int last,
         TreatmentColumns columns, bool allowIntegerIds = false)
     {
-        var mapping = new List<ColumnMapping> { new("TreatmentId", columns.Identity), new("Label", columns.Label) };
+        var mapping = new List<ColumnMapping> { new("TreatmentId", columns.Identity) };
+        if (columns.Label is int labelColumn) mapping.Add(new("Label", labelColumn));
         var factors = columns.Factors.IsDefault ? ImmutableArray<int>.Empty : columns.Factors;
         mapping.AddRange(factors.Select((x, i) => new ColumnMapping($"Factor{i + 1}", x)));
         var data = Table(source, table, header, first, last, mapping.Select(x => x.Column));
@@ -269,11 +270,13 @@ public static class DataImport
             {
                 string id = Value(row, columns.Identity, "TreatmentId", true, allowIntegerIds);
                 string label = Value(row, columns.Label, "Label", true, allowIntegerIds);
-                if (id.Length == 0 || label.Length == 0 || !ids.Add(id) || !labels.Add(label))
-                    throw new ArgumentException("Treatment: require unique nonblank IDs and labels.");
+                if (id.Length == 0 || !ids.Add(id))
+                    throw new ArgumentException("Treatment ID: require unique nonblank IDs.");
+                if (label.Length > 0 && !labels.Add(label))
+                    throw new ArgumentException("Label: require unique labels when provided.");
                 foreach (int factor in factors)
                     if (Value(row, factor, "Factor", true, allowIntegerIds).Length == 0) throw new ArgumentException("Factor: required.");
-                treatments.Add(new(id, label)); details.Add(new(id, new(application.Id, i), mapping.Skip(2).ToImmutableArray()));
+                treatments.Add(new(id, label)); details.Add(new(id, new(application.Id, i), mapping.Where(x => x.Field.StartsWith("Factor", StringComparison.Ordinal)).ToImmutableArray()));
             }
             catch (ArgumentException ex) { issues.Add(new(i, ex.Message.Split(':')[0], ex.Message)); }
         }

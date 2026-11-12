@@ -48,7 +48,7 @@ public sealed class DesktopWorkspace
         }
         finally { Leave(); }
     }
-    public async Task SaveAsync(string? path = null, CancellationToken cancellation = default)
+    public async Task SaveAsync(string? path = null, CancellationToken cancellation = default, string? replacementFileDigest = null)
     {
         Enter();
         try
@@ -59,7 +59,7 @@ public sealed class DesktopWorkspace
                 throw new IOException("Save recovered work to a new project filename.");
             var snapshot = Document;
             string? expected = string.Equals(target, FilePath, StringComparison.OrdinalIgnoreCase) ? diskDigest : null;
-            string digest = await Task.Run(() => ProjectStore.Save(snapshot, target, cancellation, expected)).ConfigureAwait(false);
+            string digest = await Task.Run(() => ProjectStore.Save(snapshot, target, cancellation, expected, replacementFileDigest)).ConfigureAwait(false);
             saved = snapshot; FilePath = target; diskDigest = digest; recoveredFrom = null;
         }
         finally { Leave(); }

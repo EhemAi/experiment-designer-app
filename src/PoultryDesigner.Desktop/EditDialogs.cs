@@ -85,7 +85,7 @@ internal sealed class SwapDialog : Form
                 preview.SetRows(["Treatment", "Unit", "Before mean", "After mean", "Block CV before (%)", "Block CV after (%)"], affected.Length, i =>
                 {
                     var p = affected[i]; var before = a.Pens.Single(x => x.TreatmentIndex == p.TreatmentIndex && x.Replicate == p.Replicate);
-                    return [chosen.Input.Inputs.Study.Treatments[p.TreatmentIndex].Label, p.Replicate, Ui.Number(before.MeanWeightGrams), Ui.Number(p.MeanWeightGrams),
+                    return [chosen.Input.Inputs.Study.Treatments[p.TreatmentIndex].DisplayLabel, p.Replicate, Ui.Number(before.MeanWeightGrams), Ui.Number(p.MeanWeightGrams),
                         a.Blocks.FirstOrDefault(x => x.Block == p.Replicate)?.CvPercent.ToString("G17") ?? "n.a. (CRD)", candidate.Blocks.FirstOrDefault(x => x.Block == p.Replicate)?.CvPercent.ToString("G17") ?? "n.a. (CRD)"];
                 });
                 apply.Enabled = true; message.Text = "Preview passed all identity, capacity and enabled CV limits. Apply creates a logged revision; this is not committed yet.";
@@ -151,7 +151,7 @@ internal sealed class MappingDialog : Form
                 var candidate = workspace.PreviewMap(Pens, Seed); var byId = Pens.ToDictionary(x => x.Id);
                 preview.SetRows(["Treatment", "Unit replicate", "Physical ID", "Scoped location"], candidate.Locations.Length, i =>
                 {
-                    var location = candidate.Locations[i]; return [chosen.Input.Inputs.Study.Treatments[location.TreatmentIndex].Label, location.Replicate, location.PhysicalPenId, byId[location.PhysicalPenId].Location];
+                    var location = candidate.Locations[i]; return [chosen.Input.Inputs.Study.Treatments[location.TreatmentIndex].DisplayLabel, location.Replicate, location.PhysicalPenId, byId[location.PhysicalPenId].Location];
                 });
                 apply.Enabled = true; message.Text = "Mapping passed uniqueness, capacity and eligibility checks. Review the Mapping preview tab before applying.";
             }

@@ -1,6 +1,6 @@
 # Maintainer release checklist
 
-Publication requires the maintainer's authorization. The v1.1.5 publication was
+Publication requires the maintainer's authorization. The v1.1.6 publication was
 explicitly requested; no additional approval is required for that release.
 
 1. Preserve the MIT license, author-supplied ORCID/affiliations and separate
@@ -23,7 +23,7 @@ explicitly requested; no additional approval is required for that release.
    bypass branch protection or force-push main.
 7. Confirm secret scanning/push protection, Dependabot, private vulnerability
    reporting and the existing Zenodo GitHub integration remain enabled.
-8. Release v1.1.5 from the verified public main commit. Upload the ready-to-run
+8. Release v1.1.6 from the verified public main commit. Upload the ready-to-run
    Windows ZIP/checksum and source ZIP/checksum. Verify anonymous downloads and
    their hashes. Keep the README download prominent.
 9. Verify Zenodo archives the new source release in the existing concept DOI

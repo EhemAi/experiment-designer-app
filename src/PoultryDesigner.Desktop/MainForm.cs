@@ -41,6 +41,7 @@ internal sealed partial class MainForm : Form
     private Animal[] filteredAnimals = [];
     private int animalPage, stage;
     private bool loading, setupDirty, selectionDirty, inOperation, allowClose;
+    private bool HasUnsavedWork => Workspace.IsDirty || setupDirty || selectionDirty;
     private CancellationTokenSource? operation;
     private ChosenRevision? chosen;
     private string? presentedActiveResultId;
@@ -58,7 +59,7 @@ internal sealed partial class MainForm : Form
         {
             if (allowClose) return;
             if (inOperation) { e.Cancel = true; operation?.Cancel(); status.Text = "Cancelling operation. Close again after it finishes."; return; }
-            if (Workspace.IsDirty || setupDirty || selectionDirty) { e.Cancel = true; if (await MayDiscardAsync()) { allowClose = true; Close(); } }
+            if (HasUnsavedWork) { e.Cancel = true; if (await MayDiscardAsync()) { allowClose = true; Close(); } }
         };
     }
 
@@ -168,7 +169,7 @@ internal sealed partial class MainForm : Form
         pens.SetRows(["Treatment", "Unit replicate", "Animals", "Mean BW", "Min BW", "Max BW", "Sample SD", "Male", "Female", "Unknown", "Total BW"], a.Pens.Length, i =>
         {
             var p = a.Pens[i]; var counts = unitSex[(p.TreatmentIndex, p.Replicate)]; var range = unitRanges[(p.TreatmentIndex, p.Replicate)];
-            return [s.Treatments[p.TreatmentIndex].Label, p.Replicate, p.Count, Ui.Number(p.MeanWeightGrams), Ui.Number(range.Minimum), Ui.Number(range.Maximum), p.SampleSdGrams?.ToString("G6") ?? "n.a.", counts.GetValueOrDefault(AnimalSex.Male), counts.GetValueOrDefault(AnimalSex.Female), counts.GetValueOrDefault(AnimalSex.Unknown), Ui.Number(p.TotalWeightGrams)];
+            return [s.Treatments[p.TreatmentIndex].DisplayLabel, p.Replicate, p.Count, Ui.Number(p.MeanWeightGrams), Ui.Number(range.Minimum), Ui.Number(range.Maximum), p.SampleSdGrams?.ToString("G6") ?? "n.a.", counts.GetValueOrDefault(AnimalSex.Male), counts.GetValueOrDefault(AnimalSex.Female), counts.GetValueOrDefault(AnimalSex.Unknown), Ui.Number(p.TotalWeightGrams)];
         });
         var overview = ResultViews.Balance(s, a);
         balance.SetRows(["Treatment", "Unit replicates", "Mean BW", "Min pen mean", "Max pen mean", "CV of pen means (%)", "Difference"], overview.Treatments.Length, i =>
@@ -181,12 +182,12 @@ internal sealed partial class MainForm : Form
         });
         edits.SetRows(["Order", "First record", "Second record", "Reason", "First before", "First after", "Second before", "Second after"], a.Edits.Length, i =>
         {
-            var e = a.Edits[i]; string Slot(Position p) => $"{s.Treatments[p.TreatmentIndex].Label} / Unit {p.Replicate} / Block {p.Block}";
+            var e = a.Edits[i]; string Slot(Position p) => $"{s.Treatments[p.TreatmentIndex].DisplayLabel} / Unit {p.Replicate} / Block {p.Block}";
             return [i + 1, e.FirstRecordId, e.SecondRecordId, e.Reason, Slot(e.BeforeFirst), Slot(e.AfterFirst), Slot(e.BeforeSecond), Slot(e.AfterSecond)];
         });
         maps.SetRows(["Treatment", "Unit replicate", "Physical ID", "Scoped location", "Capacity", "Eligible replicate", "Mapping seed"], a.Locations.Length, i =>
         {
-            var l = a.Locations[i]; var p = physical[l.PhysicalPenId]; return [s.Treatments[l.TreatmentIndex].Label, l.Replicate, p.Id, p.Location, p.Capacity, p.EligibleBlock, a.LocationSeed];
+            var l = a.Locations[i]; var p = physical[l.PhysicalPenId]; return [s.Treatments[l.TreatmentIndex].DisplayLabel, l.Replicate, p.Id, p.Location, p.Capacity, p.EligibleBlock, a.LocationSeed];
         });
     }
     private void Swap() => Guard(() =>
@@ -251,8 +252,13 @@ internal sealed partial class MainForm : Form
             var input = Workspace.Inputs; var study = input.Study;
             design.SelectedItem = design.Items.Cast<MethodOption>().Single(x => x.Code == study.Design); unit.SelectedItem = input.ExperimentalUnit;
             replicates.Value = study.Replicates; perPen.Value = study.AnimalsPerPen; sexMode.SelectedIndex = (int)study.SexMode; LoadSexSettings(study);
-            treatmentTable = new DataTable(); treatmentTable.Columns.Add("Treatment ID"); treatmentTable.Columns.Add("Label");
+            treatmentTable.RowDeleted -= TreatmentRowDeleted;
+            treatmentTable = new DataTable();
+            treatmentTable.Columns.Add("Treatment ID");
+            treatmentTable.Columns.Add("Label");
+            treatmentTable.RowDeleted += TreatmentRowDeleted;
             foreach (var t in study.Treatments) treatmentTable.Rows.Add(t.Id, t.Label); treatments.DataSource = treatmentTable;
+            treatments.Columns["Label"]!.HeaderText = "Label (optional)";
             if (treatments.Columns.Contains("Order")) treatments.Columns.Remove("Order");
             treatments.Columns.Insert(0, new DataGridViewTextBoxColumn { Name = "Order", HeaderText = "Order", ReadOnly = true, Width = 85, MinimumWidth = 85, AutoSizeMode = DataGridViewAutoSizeColumnMode.None });
             foreach (DataGridViewRow row in treatments.Rows) if (!row.IsNewRow) row.Cells["Order"].Value = row.Index + 1;
@@ -312,7 +318,7 @@ internal sealed partial class MainForm : Form
     }
     private void UpdateTitle()
     {
-        Text = $"{Workspace.Document.Name}{(Workspace.IsDirty || setupDirty || selectionDirty ? " *" : "")} — Experiment Designer";
+        Text = $"{Workspace.Document.Name}{(HasUnsavedWork ? " *" : "")} — Experiment Designer";
         status.Text = Workspace.Inputs.Study.Demonstration ? "Demonstration study" : "";
         Components.Tip(status, Workspace.FilePath ?? "This study has no saved filename yet.");
         RefreshPresentation();
@@ -388,26 +394,49 @@ internal sealed partial class MainForm : Form
     {
         bool valid = false; Guard(() => { FlushDrafts(); valid = true; }); if (!valid) return false;
         string? path = Workspace.FilePath;
-        if (saveAs || path is null || string.Equals(Path.GetExtension(path), ProjectStore.LegacyExtension, StringComparison.OrdinalIgnoreCase))
+        string? replacementFileDigest = null;
+        if (saveAs || path is null)
         {
             string filename = new(Workspace.Document.Name.Take(100).Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c).ToArray());
             using var save = new SaveFileDialog
             {
+                Title = saveAs ? "Save Project As" : "Save Project",
                 Filter = "Experiment Designer project|*" + ProjectStore.ProjectExtension,
                 DefaultExt = ProjectStore.ProjectExtension.TrimStart('.'),
                 AddExtension = true,
+                OverwritePrompt = false,
+                RestoreDirectory = true,
                 InitialDirectory = path is null ? "" : Path.GetDirectoryName(path),
-                FileName = (path is null ? filename : Path.GetFileNameWithoutExtension(path)) + ProjectStore.ProjectExtension
+                FileName = path is null ? filename : Path.GetFileNameWithoutExtension(path)
             };
-            if (save.ShowDialog(this) != DialogResult.OK) return false; path = save.FileName;
+            save.FileOk += (_, args) =>
+            {
+                replacementFileDigest = null;
+                try
+                {
+                    if (!File.Exists(save.FileName)) return;
+                    string digest = ProjectStore.FileDigest(save.FileName);
+                    var answer = MessageBox.Show(this, $"{Path.GetFileName(save.FileName)} already exists. Replace it?",
+                        "Confirm Save As", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+                    if (answer == DialogResult.Yes) replacementFileDigest = digest;
+                    else args.Cancel = true;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    args.Cancel = true;
+                    MessageBox.Show(this, ex.Message, "Save Project", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
+            if (save.ShowDialog(this) != DialogResult.OK) return false;
+            path = save.FileName;
         }
         saving = true; saveFailed = false; RefreshPresentation();
-        bool success = await OperationAsync(token => Workspace.SaveAsync(path, token)); saving = false; saveFailed = !success; RefreshPresentation();
+        bool success = await OperationAsync(token => Workspace.SaveAsync(path, token, replacementFileDigest)); saving = false; saveFailed = !success; RefreshPresentation();
         if (success) Notify("Project saved"); return success && !Workspace.IsDirty;
     }
     private async Task<bool> MayDiscardAsync()
     {
-        if (!Workspace.IsDirty && !setupDirty && !selectionDirty) return true;
+        if (!HasUnsavedWork) return true;
         var choice = MessageBox.Show(this, "Save your current project and pending edits before continuing?", "Unsaved work", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
         if (choice == DialogResult.Cancel) return false; if (choice == DialogResult.No) return true; return await SaveAsync();
     }

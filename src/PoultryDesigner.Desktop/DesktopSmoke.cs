@@ -79,6 +79,7 @@ internal static class DesktopSmoke
             workspace.Map(physical, 234, "Declared physical pool");
             string file = Path.Combine(output, "desktop-example-" + Guid.NewGuid().ToString("N") + ProjectStore.ProjectExtension); workspace.SaveAsync(file).GetAwaiter().GetResult();
             using var main = new MainForm(); main.StartPosition = FormStartPosition.Manual; main.Location = new(-25000, -25000); main.Show(); Application.DoEvents();
+            await main.ExerciseStartupSavePromptForSmoke(Check);
             for (int i = 0; i < 4; i++) { main.StageForSmoke(i); Render(main, new[] { "study-empty", "animals-empty", "allocation-empty", "history-empty" }[i]); }
             main.LoadForSmoke(file); main.ExerciseCorrectionsForSmoke(file, output, Check, Render); main.ExerciseForSmoke(Check); await main.ExerciseReviewForSmoke(file, Check, Render); await main.ExerciseAnimalPagingForSmoke(file, Check);
             await main.ExerciseSexForSmoke(file, Check, Render);

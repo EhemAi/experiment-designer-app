@@ -114,7 +114,7 @@ public static class AllocationReports
             ["Treatment ID", "Treatment label", "Unit replicate", "Animals", "Total BW", "Mean BW", "Sample SD", housingNumber, "Scoped location", "Male", "Female", "Unknown", "Minimum BW", "Maximum BW"],
             a.Pens.OrderBy(x => x.TreatmentIndex).ThenBy(x => x.Replicate).Select(p =>
             {
-                var l = locations.GetValueOrDefault((p.TreatmentIndex, p.Replicate)); var counts = penSexCounts[(p.TreatmentIndex, p.Replicate)]; var weights = unitWeights[(p.TreatmentIndex, p.Replicate)]; return new object?[] { NumericIdentifier(s.Treatments[p.TreatmentIndex].Id), s.Treatments[p.TreatmentIndex].Label,
+                var l = locations.GetValueOrDefault((p.TreatmentIndex, p.Replicate)); var counts = penSexCounts[(p.TreatmentIndex, p.Replicate)]; var weights = unitWeights[(p.TreatmentIndex, p.Replicate)]; return new object?[] { NumericIdentifier(s.Treatments[p.TreatmentIndex].Id), s.Treatments[p.TreatmentIndex].DisplayLabel,
                     p.Replicate, p.Count, p.TotalWeightGrams, p.MeanWeightGrams, p.SampleSdGrams, NumericIdentifier(l?.Id), l?.Location ?? "Unmapped", counts.GetValueOrDefault(AnimalSex.Male), counts.GetValueOrDefault(AnimalSex.Female), counts.GetValueOrDefault(AnimalSex.Unknown), weights.Min(), weights.Max() };
             }));
         var anova = BodyWeightAnova.Calculate(s, a.Pens);

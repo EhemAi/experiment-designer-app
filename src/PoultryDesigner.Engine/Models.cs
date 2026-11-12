@@ -9,7 +9,11 @@ public sealed record Animal(string RecordId, string AnimalId, decimal WeightGram
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
     public AnimalSex Sex { get; init; }
 }
-public sealed record Treatment(string Id, string Label);
+public sealed record Treatment(string Id, string Label = "")
+{
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string DisplayLabel => Label.Length == 0 ? Id : Label;
+}
 public sealed record Study(Design Design, ImmutableArray<Animal> Pool,
     ImmutableArray<string> SelectedRecordIds, ImmutableArray<Treatment> Treatments,
     int Replicates, int AnimalsPerPen, bool FilterBalance = false,

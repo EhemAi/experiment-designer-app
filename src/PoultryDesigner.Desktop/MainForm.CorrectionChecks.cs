@@ -2,6 +2,17 @@ namespace PoultryDesigner.Desktop;
 
 internal sealed partial class MainForm
 {
+    internal async Task ExerciseStartupSavePromptForSmoke(Action<bool, string> check)
+    {
+        check(!HasUnsavedWork && saveState.Text == "Not saved to file" && !Text.Contains(" *", StringComparison.Ordinal),
+            "Showing the untouched startup form does not mark the blank study dirty.");
+        check(await MayDiscardAsync(), "New Study can proceed immediately from the untouched startup form.");
+        replicates.Value = 2;
+        check(HasUnsavedWork && saveState.Text == "Unsaved changes", "Editing the blank study activates the save prompt condition.");
+        setupDirty = false;
+        Reload();
+    }
+
     internal void ExerciseCorrectionsForSmoke(string fixture, string output, Action<bool, string> check, Action<Form, string> render)
     {
         void Restore() { Workspace.OpenAsync(fixture, discardChanges: true).GetAwaiter().GetResult(); setupDirty = selectionDirty = false; Reload(); }
@@ -16,6 +27,12 @@ internal sealed partial class MainForm
         check(Workspace.Inputs.Notes == "Retained historical notes" && !Workspace.Inputs.Study.FilterBalance && Workspace.Inputs.Study.BalancedBwCages && !Workspace.Inputs.Study.CompactCages
             && Workspace.Inputs.Study.CvLimitPercent == 90 && Workspace.Inputs.Study.MaximumAttemptsPerBlock == 30
             && Workspace.Inputs.Study.Demonstration == inputs.Study.Demonstration, "Setup uses ranked BW balancing while retaining the historical CV value and ensuring at least 30 candidate attempts, notes and demonstration policy");
+        foreach (System.Data.DataRow row in treatmentTable.Rows) row["Label"] = "";
+        ApplySetup();
+        check(Workspace.Inputs.Study.Treatments.All(t => t.Label == "" && t.DisplayLabel == t.Id)
+            && PresentationState.SetupValid(Workspace.Inputs.Study), "Treatment IDs alone are enough to apply valid study settings.");
+        treatmentTable.Rows[0].Delete();
+        check(HasUnsavedWork && setupDirty, "Removing an actual treatment still marks the study dirty.");
         Restore(); SetStage(1); search.Text = "B0";
         var document = Workspace.Document; var binding = animals.DataSource; var before = Theme.IsDark;
         perPen.Value++; int draft = (int)perPen.Value; var selectionBefore = selection.ToArray();

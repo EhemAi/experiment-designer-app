@@ -77,7 +77,7 @@ internal sealed class ImportDialog : SourceDialog
             var field = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new(4) };
             field.ColumnStyles.Add(new(SizeType.Percent, 100));
             field.RowStyles.Add(new(SizeType.Absolute, 30)); field.RowStyles.Add(new(SizeType.Percent, 100));
-            var label = Ui.Label(name); label.Font = Theme.Body(8.5f, FontStyle.Bold);
+            var label = Ui.Label(!animal && name == "Label" ? "Label (optional)" : name); label.Font = Theme.Body(8.5f, FontStyle.Bold);
             label.AutoSize = false; label.Dock = DockStyle.Fill; label.Margin = new(4, 4, 4, 0);
             field.Controls.Add(label, 0, 0); field.Controls.Add(combo, 0, 1); mappings.Controls.Add(field, mappings.Controls.Count, 0);
             combo.SelectedIndexChanged += (_, _) => InvalidatePreview();
@@ -115,7 +115,7 @@ internal sealed class ImportDialog : SourceDialog
         {
             foreach (var (field, combo) in fields)
             {
-                combo.Items.Clear(); bool required = field is "Animal ID" or "BW" or "Treatment ID" or "Label";
+                combo.Items.Clear(); bool required = field is "Animal ID" or "BW" or "Treatment ID";
                 if (!required) combo.Items.Add(new ColumnOption(0, "(unmapped)"));
                 for (int column = 1; column <= max; column++)
                     combo.Items.Add(new ColumnOption(column, $"{column}: {cells.SingleOrDefault(x => x.Column == column)?.Value ?? "(no header)"}"));
@@ -151,9 +151,10 @@ internal sealed class ImportDialog : SourceDialog
     {
         if (working) return;
         if (sheet.SelectedItem is not string table) { message.Text = "Choose a sheet explicitly."; return; }
-        int id = Column(animal ? "Animal ID" : "Treatment ID") ?? 0, value = Column(animal ? "BW" : "Label") ?? 0;
-        if (id == 0 || value == 0) { message.Text = "Choose both required columns explicitly."; return; }
-        var cols = animal ? new AnimalColumns(id, value, Column("Cohort"), Column("Old location"), Column("Maternal ID"), Column("Paternal ID"), Column("Notes"), Column("Sex")) : null;
+        int id = Column(animal ? "Animal ID" : "Treatment ID") ?? 0;
+        int? value = Column(animal ? "BW" : "Label");
+        if (id == 0 || (animal && value is null)) { message.Text = animal ? "Choose the Animal ID and BW columns." : "Choose the Treatment ID column."; return; }
+        var cols = animal ? new AnimalColumns(id, value.GetValueOrDefault(), Column("Cohort"), Column("Old location"), Column("Maternal ID"), Column("Paternal ID"), Column("Notes"), Column("Sex")) : null;
         var factors = animal ? ImmutableArray<int>.Empty : Enumerable.Range(1, 4).Select(i => Column("Factor " + i)).Where(x => x.HasValue).Select(x => x!.Value).ToImmutableArray();
         int h = (int)header.Value, f = (int)first.Value, l = (int)last.Value; bool integer = numericIds.Checked; const string unit = "raw";
         working = true; inspect.Enabled = apply.Enabled = false; foreach (var combo in fields.Values) combo.Enabled = false;

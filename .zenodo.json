@@ -1,7 +1,7 @@
 {
   "title": "Experiment Designer",
   "upload_type": "software",
-  "description": "<p>A Windows desktop application for reproducible animal allocation in livestock trials, with sex composition controls, ranked body-weight subgroup balancing for RCBD, prepared pen/cage layouts, immutable history and concise Excel reports.</p><p><strong>How to cite</strong>: If you use Experiment Designer in research, publications, reports or presentations, please cite the software version used. Author: Emmanuel O. Alagbe. Version 1.1.5 (2026), Experiment Designer [Computer software]. Use the version DOI shown on this record; the all-versions DOI is https://doi.org/10.5281/zenodo.23698895.</p><p>This record archives source code. Download the ready-to-run Windows package and checksum from https://github.com/EhemAi/experiment-designer-app/releases/tag/v1.1.5.</p>",
+  "description": "<p>A Windows desktop application for reproducible animal allocation in livestock trials, with sex composition controls, ranked body-weight subgroup balancing for RCBD, prepared pen/cage layouts, immutable history and concise Excel reports. Version 1.1.6 improves project saving, supports optional treatment labels and fixes the blank startup save prompt.</p><p><strong>How to cite</strong>: If you use Experiment Designer in research, publications, reports or presentations, please cite the software version used. Author: Emmanuel O. Alagbe. Version 1.1.6 (2026), Experiment Designer [Computer software]. Use the version DOI shown on this record; the all-versions DOI is https://doi.org/10.5281/zenodo.23698895.</p><p>This record archives source code. Download the ready-to-run Windows package and checksum from https://github.com/EhemAi/experiment-designer-app/releases/tag/v1.1.6.</p>",
   "creators": [
     {
       "name": "Alagbe, Emmanuel O.",
@@ -10,7 +10,7 @@
     }
   ],
   "license": "mit",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "keywords": [
     "animal nutrition",
     "livestock",

@@ -101,7 +101,9 @@ internal static class BalancedBwChecks
         session.Revise(session.CurrentInput.Inputs with { Study = study, PreparedLayout = housing }, "Ranked BW subgroup balancing");
         session.Run(20261104, "Balanced subgroup allocation"); session.MapPens(housing.Pens, housing.Seed, "Preserve prepared treatment locations");
         string output = Path.Combine(root, "analysis/balanced-bw-validation"); Directory.CreateDirectory(output);
-        string project = Path.Combine(output, "synthetic-balanced-balanced.experimentproj"); ProjectStore.Save(session.Document, project); var reopened = ProjectStore.Open(project);
+        string project = Path.Combine(output, "synthetic-balanced-balanced.experimentproj");
+        ProjectStore.Save(session.Document, project, replacementFileDigest: File.Exists(project) ? ProjectStore.FileDigest(project) : null);
+        var reopened = ProjectStore.Open(project);
         Check(JsonSerializer.Serialize(reopened.Document) == JsonSerializer.Serialize(session.Document) && reopened.Choose(previous).Input.Inputs.Study.CompactCages, "Earlier contiguous results and new balanced results coexist and replay unchanged");
         var report = AllocationReports.Create(session.Choose(session.Document.ActiveResultId!), false, false);
         Check(report.Tables.Length == 5 && report.Tables.All(t => !t.Columns.Any(c => c.Name.Contains("(g)"))), "Concise unit-neutral exports are preserved");

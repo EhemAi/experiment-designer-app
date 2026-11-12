@@ -4,6 +4,14 @@ namespace PoultryDesigner.Desktop;
 
 internal sealed partial class MainForm
 {
+    // Binding can remove grid rows while the form opens. Track deletions from the study table.
+    private void TreatmentRowDeleted(object? sender, DataRowChangeEventArgs e)
+    {
+        if (loading) return;
+        DraftSetup();
+        RefreshSexSettings();
+    }
+
     private void BuildSetup()
     {
         design.Items.AddRange(new object[] { new MethodOption(Design.Rcbd, "RCBD • BW blocks"), new MethodOption(Design.Crd, "Completely randomized"), new MethodOption(Design.Conventional, "Conventional serpentine") });
@@ -27,7 +35,7 @@ internal sealed partial class MainForm
             Ui.Button("Remove selected", () =>
             {
                 var rows = treatments.SelectedRows.Cast<DataGridViewRow>().Where(r => !r.IsNewRow).Select(r => (DataRowView)r.DataBoundItem!).ToArray();
-                foreach (var row in rows) row.Row.Delete(); DraftSetup();
+                foreach (var row in rows) row.Row.Delete();
             }), importTreatments, reorder);
         treatmentHost.Controls.Add(treatments); treatmentHost.Controls.Add(tools);
         var split = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1 };
@@ -44,7 +52,6 @@ internal sealed partial class MainForm
         design.SelectedIndexChanged += (_, _) => { DraftSetup(); Capabilities(); }; unit.SelectedIndexChanged += (_, _) => DraftSetup();
         sexMode.SelectedIndexChanged += (_, _) => SexModeChanged();
         treatments.CellValueChanged += (_, e) => { if (e.ColumnIndex >= 0 && treatments.Columns[e.ColumnIndex].DataPropertyName is "Treatment ID" or "Label") DraftSetup(); };
-        treatments.RowsRemoved += (_, _) => { DraftSetup(); if (!loading) RefreshSexSettings(); };
         treatments.RowsAdded += (_, _) => { if (!loading) RefreshSexSettings(); };
         treatments.DataError += (_, e) => { e.ThrowException = false; pageAlert.Text = "Correct the treatment value before applying settings."; };
     }

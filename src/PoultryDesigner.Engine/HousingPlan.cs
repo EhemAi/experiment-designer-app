@@ -14,7 +14,7 @@ public static class HousingLayouts
         long count = (long)s.Treatments.Length * s.Replicates;
         if (input.ExperimentalUnit is not ("pen" or "cage") || s.Treatments.IsDefault || s.Treatments.Length < 2
             || s.Replicates < 2 || s.AnimalsPerPen < 1 || count > AllocationEngine.MaximumAnimals || count * s.AnimalsPerPen > AllocationEngine.MaximumAnimals
-            || s.Treatments.Any(t => string.IsNullOrWhiteSpace(t.Id) || string.IsNullOrWhiteSpace(t.Label))
+            || s.Treatments.Any(t => string.IsNullOrWhiteSpace(t.Id))
             || s.Treatments.Select(t => t.Id).Distinct(StringComparer.Ordinal).Count() != s.Treatments.Length)
             throw new ArgumentException("Complete valid treatments, replicates and animals per unit before preparing a layout.");
         if (first < 1 || last < first || (long)last - first + 1 != count)

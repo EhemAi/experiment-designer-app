@@ -71,7 +71,7 @@ internal sealed partial class MainForm
             var rows = plan.Locations.OrderBy(x => int.Parse(x.PhysicalPenId)).ToArray();
             preparedGrid.SetRows([plan.Unit == "cage" ? "Cage number" : "Pen number", "Replicate", "Treatment", "Animals / unit"], rows.Length, i =>
             {
-                var l = rows[i]; return [l.PhysicalPenId, l.Replicate, plan.Treatments[l.TreatmentIndex].Label, plan.AnimalsPerUnit];
+                var l = rows[i]; return [l.PhysicalPenId, l.Replicate, plan.Treatments[l.TreatmentIndex].DisplayLabel, plan.AnimalsPerUnit];
             });
         }
         else preparedGrid.SetRows([], 0, _ => []);

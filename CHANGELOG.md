@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.6] - 2026-11-12
+
+- Use standard Save and Save As behavior, with confirmed replacement and backups.
+- Allow treatment IDs without labels in study setup and import.
+- Keep an untouched startup study clean when the treatment grid initializes.
+- Bundle .NET 10.0.15 and pin SDK 10.0.404.
+
 ## [1.1.5] - 2026-11-04
 
 ### Added

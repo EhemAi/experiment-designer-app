@@ -118,9 +118,9 @@ internal static class PresentationState
 {
     internal static long Required(Study study) => (long)study.Treatments.Length * study.Replicates * study.AnimalsPerPen;
     internal static bool SetupValid(Study s) => s.Treatments.Length >= 2 && s.Replicates >= 2 && s.AnimalsPerPen >= 1
-        && Required(s) <= AllocationEngine.MaximumAnimals && s.Treatments.All(t => !string.IsNullOrWhiteSpace(t.Id) && !string.IsNullOrWhiteSpace(t.Label))
+        && Required(s) <= AllocationEngine.MaximumAnimals && s.Treatments.All(t => !string.IsNullOrWhiteSpace(t.Id) && t.Label is not null)
         && s.Treatments.Select(t => t.Id).Distinct(StringComparer.Ordinal).Count() == s.Treatments.Length
-        && s.Treatments.Select(t => t.Label).Distinct(StringComparer.Ordinal).Count() == s.Treatments.Length
+        && s.Treatments.Where(t => t.Label.Length > 0).GroupBy(t => t.Label, StringComparer.Ordinal).All(group => group.Count() == 1)
         && s.CvLimitPercent is >= 0 and <= 100 && s.MaximumAttemptsPerBlock is >= 1 and <= 1000000
         && (!s.FilterBalance || s.Design == Design.Rcbd);
     internal static string SelectionMessage(Study s, IEnumerable<SelectionDecision> decisions)

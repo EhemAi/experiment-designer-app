@@ -26,7 +26,7 @@ internal static class ProjectValidation
     {
         int? Column(string name) => app.Columns.SingleOrDefault(x => x.Field == name)?.Column;
         var preview = DataImport.Treatments(source, app.Table, app.HeaderRow, app.FirstRow, app.LastRow,
-            new(Column("TreatmentId") ?? 0, Column("Label") ?? 0,
+            new(Column("TreatmentId") ?? 0, Column("Label"),
                 app.Columns.Where(x => x.Field.StartsWith("Factor", StringComparison.Ordinal)).Select(x => x.Column).ToImmutableArray()), app.AllowIntegerIds);
         var imported = preview.Value ?? throw new ArgumentException("Retained treatment import has invalid source rows.");
         if (ProjectSession.Digest(imported.Application with { Id = app.Id }) != ProjectSession.Digest(app))
@@ -119,7 +119,7 @@ internal static class ProjectValidation
         {
             var source = sources.SingleOrDefault(x => x.Id == app.SourceId) ?? throw new ArgumentException("Missing original import source.");
             var table = source.Tables.SingleOrDefault(x => x.Name == app.Table) ?? throw new ArgumentException("Missing original source table.");
-            if (app.Columns.IsDefault || app.Columns.Length < 2 || app.Columns.Any(x => x is null || string.IsNullOrWhiteSpace(x.Field) || x.Column < 1 || x.Column > 16_384)
+            if (app.Columns.IsDefault || app.Columns.Length < (app.WeightUnit == "" ? 1 : 2) || app.Columns.Any(x => x is null || string.IsNullOrWhiteSpace(x.Field) || x.Column < 1 || x.Column > 16_384)
                 || app.Columns.Select(x => x.Field).Distinct().Count() != app.Columns.Length
                 || app.Columns.Select(x => x.Column).Distinct().Count() != app.Columns.Length
                 || app.HeaderRow < 1 || app.FirstRow <= app.HeaderRow || app.LastRow < app.FirstRow
