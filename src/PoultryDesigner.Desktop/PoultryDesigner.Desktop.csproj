@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><AssemblyName>ExperimentDesigner</AssemblyName><Version>1.1.5</Version><Product>Experiment Designer</Product><Description>Seeded experimental allocation for livestock trials.</Description></PropertyGroup>
+  <PropertyGroup><AssemblyName>ExperimentDesigner</AssemblyName><Version>1.1.6</Version><Product>Experiment Designer</Product><Description>Seeded experimental allocation for livestock trials.</Description></PropertyGroup>
   <PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors><ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode></PropertyGroup>
   <ItemGroup><ProjectReference Include="../PoultryDesigner.AppCore/PoultryDesigner.AppCore.csproj" /></ItemGroup>
   <PropertyGroup><ApplicationIcon>Assets/Brand/experiment-designer.ico</ApplicationIcon></PropertyGroup>

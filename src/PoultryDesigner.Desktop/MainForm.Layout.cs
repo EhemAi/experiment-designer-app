@@ -47,7 +47,8 @@ internal sealed partial class MainForm
         file.ContextMenuStrip = menu;
         menu.Items.Add("New study  Ctrl+N", null, (_, _) => _ = NewAsync());
         menu.Items.Add("Open  Ctrl+O", null, (_, _) => _ = OpenAsync(false)); menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Save as", null, (_, _) => _ = SaveAsync(true)); menu.Items.Add("Recover backup", null, (_, _) => _ = OpenAsync(true));
+        menu.Items.Add("Save  Ctrl+S", null, (_, _) => _ = SaveAsync());
+        menu.Items.Add("Save As…  Ctrl+Shift+S", null, (_, _) => _ = SaveAsync(true)); menu.Items.Add("Recover backup", null, (_, _) => _ = OpenAsync(true));
         file.Click += (_, _) => menu.Show(file, new Point(0, file.Height));
         var save = Ui.Button("Save", () => _ = SaveAsync()); ((StyledButton)save).Primary = true;
         saveState.AutoSize = true; saveState.MinimumSize = new(0, 36); saveState.Dock = DockStyle.None;
@@ -103,7 +104,7 @@ internal sealed partial class MainForm
         KeyPreview = true; KeyDown += (_, e) =>
         {
             if (!e.Control || inOperation) return;
-            if (e.KeyCode == Keys.S) { e.SuppressKeyPress = true; _ = SaveAsync(); }
+            if (e.KeyCode == Keys.S) { e.SuppressKeyPress = true; _ = SaveAsync(e.Shift); }
             if (e.KeyCode == Keys.O) { e.SuppressKeyPress = true; _ = OpenAsync(false); }
             if (e.KeyCode == Keys.N) { e.SuppressKeyPress = true; _ = NewAsync(); }
         };
@@ -152,8 +153,8 @@ internal sealed partial class MainForm
         string shortName = Workspace.Document.Name.Length > 22 ? Workspace.Document.Name[..19] + "…" : Workspace.Document.Name;
         projectIdentity.Text = shortName; Components.Tip(projectIdentity, Workspace.Document.Name + "\nProject ID: " + Workspace.Document.Id);
         counts.Text = $"{s.Pool.Length:N0}  Source animals\n{s.SelectedRecordIds.Length:N0}  Selected\n{(long)s.Treatments.Length * s.Replicates:N0}  {Workspace.Inputs.ExperimentalUnit}s required";
-        saveState.Text = PresentationState.SaveState(saving, saveFailed, Workspace.IsDirty || setupDirty || selectionDirty, Workspace.FilePath);
-        saveState.ForeColor = saveFailed ? Theme.Red : Workspace.IsDirty || setupDirty || selectionDirty ? Theme.Warning : Theme.Muted;
+        saveState.Text = PresentationState.SaveState(saving, saveFailed, HasUnsavedWork, Workspace.FilePath);
+        saveState.ForeColor = saveFailed ? Theme.Red : HasUnsavedWork ? Theme.Warning : Theme.Muted;
         int currentStep = stage == 2 && chosen is not null ? 3 : stage == 3 ? -1 : stage;
         string Marker(int step) => currentStep == step ? "▶ " : "";
         workflow.Text = $"{Marker(0)}1 Study    ›    {Marker(1)}2 Animals    ›    {Marker(2)}3 Allocation    ›    {Marker(3)}4 Review / Export";

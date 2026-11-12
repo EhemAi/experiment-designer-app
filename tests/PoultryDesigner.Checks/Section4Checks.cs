@@ -198,6 +198,25 @@ internal static class Section4Checks
         var other = ProjectSession.Create("Other study", ProjectInputs.FromStudy(study, "Selected"), "Initial");
         Reject(() => ProjectStore.Save(other.Document, work), "Cannot overwrite different project identity.");
 
+        var idsOnly = Csv("ID\n01\n02\n", "ids-only.csv");
+        var optionalLabels = DataImport.Treatments(idsOnly, "Delimited", 1, 2, 3, new(1)).Value!;
+        var blankLabelCells = DataImport.Treatments(Csv("ID,Label,Factor\n01,,A\n02,   ,B\n"), "Delimited", 1, 2, 3, new(1, 2, [3])).Value!;
+        Check(optionalLabels.Treatments.SequenceEqual(blankLabelCells.Treatments)
+            && optionalLabels.Treatments.All(t => t.Label == "" && t.DisplayLabel == t.Id)
+            && blankLabelCells.Details[0].FactorColumns.Single().Column == 3,
+            "Omitted and empty label columns preserve blank labels, display IDs and retain factors.");
+        var unlabeled = ProjectSession.Create("IDs only", ProjectInputs.FromStudy(study, "Selected"), "Initial");
+        unlabeled.ImportTreatments(idsOnly, optionalLabels, "Import IDs only");
+        var unlabeledInputs = unlabeled.CurrentInput.Inputs;
+        var plan = HousingLayouts.Create(unlabeledInputs, 1, 4, 12);
+        unlabeled.Revise(unlabeledInputs with { PreparedLayout = plan }, "Prepare layout for unlabeled treatments");
+        Check(unlabeled.Run(12, "Allocate unlabeled treatments").Status == RunStatus.Success, "An IDs-only study can prepare housing and allocate.");
+        string unlabeledPath = Path.ChangeExtension(work, ".unlabeled.experimentproj");
+        ProjectStore.Save(unlabeled.Document, unlabeledPath);
+        var reopenedUnlabeled = ProjectStore.Open(unlabeledPath);
+        Check(reopenedUnlabeled.CurrentInput.Inputs.Study.Treatments.SequenceEqual(optionalLabels.Treatments),
+            "IDs-only imports replay with blank labels after saving and reopening.");
+
         string corrupt = Path.Combine(output, "malformed-test.poultryproj");
         void CorruptDocument(ProjectDocument doc, string message)
         {

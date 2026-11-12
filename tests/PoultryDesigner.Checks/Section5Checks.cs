@@ -89,6 +89,24 @@ internal static class Section5Checks
         string restored = path + ".restored.poultryproj"; recovery.SaveAsync(restored).GetAwaiter().GetResult();
         Check(!recovery.IsDirty && ProjectStore.Load(restored).ActiveResultId == originalId, "Recovered work saves to a new validated project.");
 
+        string replacementPath = Path.ChangeExtension(path, ProjectStore.ProjectExtension);
+        workspace.SaveAsync(replacementPath).GetAwaiter().GetResult();
+        var replacement = new DesktopWorkspace();
+        replacement.New("New study with the same filename");
+        string replacementDigest = ProjectStore.FileDigest(replacementPath);
+        Reject(() => replacement.SaveAsync(replacementPath).GetAwaiter().GetResult(), "Replacing another study requires confirmation.");
+        Reject(() => replacement.SaveAsync(replacementPath, replacementFileDigest: oldHash).GetAwaiter().GetResult(),
+            "Confirmation cannot replace bytes that differ from the approved file.");
+        Check(ProjectStore.FileDigest(replacementPath) == replacementDigest && replacement.FilePath is null && replacement.IsDirty,
+            "A rejected replacement preserves the old file and the new study.");
+        replacement.SaveAsync(replacementPath, replacementFileDigest: replacementDigest).GetAwaiter().GetResult();
+        Check(ProjectStore.Load(replacementPath).Id == replacement.Document.Id
+            && ProjectStore.FileDigest(replacementPath + ".bak") == replacementDigest
+            && replacement.FilePath == replacementPath && !replacement.IsDirty, "Confirmed replacement updates the active path and backs up the previous study.");
+        replacement.Revise(replacement.Inputs with { Notes = "Further edits" }, "Edit replaced study");
+        replacement.SaveAsync().GetAwaiter().GetResult();
+        Check(ProjectStore.Open(replacementPath).CurrentInput.Inputs.Notes == "Further edits", "Regular Save writes subsequent edits to the replaced file.");
+
         var concurrent = new DesktopWorkspace(); concurrent.OpenAsync(restored).GetAwaiter().GetResult();
         var currentResult = concurrent.Document.ActiveResultId;
         using var entered = new ManualResetEventSlim(); using var release = new ManualResetEventSlim(); using var cancelRun = new CancellationTokenSource();

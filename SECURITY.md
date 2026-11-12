@@ -4,7 +4,7 @@
 
 | Version | Security fixes |
 | --- | --- |
-| 1.1.5 | Current supported line |
+| 1.1.6 | Current supported line |
 | Earlier releases | Upgrade to the current supported release |
 
 Use the current public release and verify its SHA-256 checksum. Runtime updates

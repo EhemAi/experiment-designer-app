@@ -24,6 +24,7 @@ public static class ProjectStore
             if (info.Kind == JsonTypeInfoKind.Object && info.Type.Namespace == typeof(ProjectDocument).Namespace)
                 foreach (var property in info.Properties)
                     property.IsRequired = !(info.Type == typeof(ProjectInputs) && property.Name is nameof(ProjectInputs.PreparedLayout) or nameof(ProjectInputs.AutomaticPoolSelection))
+                        && !(info.Type == typeof(Treatment) && property.Name == nameof(Treatment.DisplayLabel))
                         && !(info.Type == typeof(Animal) && property.Name == nameof(Animal.Sex))
                         && !(info.Type == typeof(Study) && property.Name is nameof(Study.SexMode) or nameof(Study.SexSettings) or nameof(Study.CompactCages) or nameof(Study.BalancedBwCages));
         });
@@ -85,7 +86,7 @@ public static class ProjectStore
     // The optional file digest detects an externally changed target. The caller keeps it after open/save.
     // An exclusive lock file also prevents this writer from racing another cooperating writer.
     public static string Save(ProjectDocument project, string path, CancellationToken cancellation = default,
-        string? expectedFileDigest = null)
+        string? expectedFileDigest = null, string? replacementFileDigest = null)
     {
         if (!string.Equals(Path.GetExtension(path), ProjectExtension, StringComparison.OrdinalIgnoreCase)
             && !string.Equals(Path.GetExtension(path), LegacyExtension, StringComparison.OrdinalIgnoreCase))
@@ -96,13 +97,12 @@ public static class ProjectStore
         string lockPath = target + ".lock";
         using var writerLock = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None,
             1, FileOptions.DeleteOnClose);
-        if (File.Exists(target))
-        {
-            if (expectedFileDigest is not null && FileDigest(target) != expectedFileDigest)
-                throw new IOException("Project changed on disk. Open the newer file or save to a new path.");
-            if (Load(target, cancellation).Id != project.Id) throw new IOException("Target belongs to another project. Save to a new path.");
-        }
-        else if (expectedFileDigest is not null) throw new IOException("Expected project target is missing.");
+        bool targetExists = File.Exists(target);
+        // A Save As confirmation applies only to the bytes the user agreed to replace.
+        string? expected = replacementFileDigest ?? expectedFileDigest;
+        if (!targetExists && expected is not null) throw new IOException("The project file is missing. Choose a filename with Save As.");
+        if (targetExists && replacementFileDigest is null && Load(target, cancellation).Id != project.Id)
+            throw new IOException("This file belongs to another project. Use Save As to confirm a replacement.");
         try
         {
             cancellation.ThrowIfCancellationRequested();
@@ -112,7 +112,9 @@ public static class ProjectStore
             { file.Write(bytes); file.Flush(true); }
             cancellation.ThrowIfCancellationRequested();
             // No delete-then-write fallback: failure preserves the existing project and previous backup.
-            if (File.Exists(target)) File.Replace(temporary, target, target + ".bak", true);
+            if (expected is not null && (!File.Exists(target) || FileDigest(target) != expected))
+                throw new IOException("The project file changed on disk. Reopen it or use Save As to confirm a replacement.");
+            if (targetExists) File.Replace(temporary, target, target + ".bak", true);
             else File.Move(temporary, target);
             return Convert.ToHexString(SHA256.HashData(bytes));
         }

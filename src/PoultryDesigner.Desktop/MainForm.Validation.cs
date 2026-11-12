@@ -18,10 +18,11 @@ internal sealed partial class MainForm
         catch (ArgumentException ex) { Field(sexMode, ex.Message); }
         var rows = treatmentTable.Rows.Cast<DataRow>().Where(x => x.RowState != DataRowState.Deleted).ToArray();
         string[] ids = rows.Select(r => Convert.ToString(r["Treatment ID"])!.Trim()).ToArray();
-        string[] labels = rows.Select(r => Convert.ToString(r["Label"])!.Trim()).ToArray();
-        string treatmentError = rows.Length < 2 ? "Define at least two treatments." : ids.Any(string.IsNullOrWhiteSpace) || labels.Any(string.IsNullOrWhiteSpace)
-            ? "Every treatment needs an ID and a label." : ids.Distinct(StringComparer.Ordinal).Count() != ids.Length || labels.Distinct(StringComparer.Ordinal).Count() != labels.Length
-            ? "Treatment IDs and labels must each be unique." : "";
+        string[] labels = rows.Select(r => Convert.ToString(r["Label"])!.Trim()).Where(label => label.Length > 0).ToArray();
+        string treatmentError = rows.Length < 2 ? "Define at least two treatments." : ids.Any(string.IsNullOrWhiteSpace)
+            ? "Every treatment needs an ID." : ids.Distinct(StringComparer.Ordinal).Count() != ids.Length
+            ? "Treatment IDs must be unique." : labels.Distinct(StringComparer.Ordinal).Count() != labels.Length
+            ? "Treatment labels must be unique when provided." : "";
         Field(treatments, treatmentError);
         long required = (long)rows.Length * (int)replicates.Value * (int)perPen.Value;
         if (required > PoultryDesigner.Engine.AllocationEngine.MaximumAnimals) errors.Add("The required animal count exceeds the supported maximum.");

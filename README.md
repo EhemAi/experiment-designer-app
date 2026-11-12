@@ -2,7 +2,7 @@
 
 ## Download for Windows
 
-**[Download Experiment Designer v1.1.5 for Windows (64-bit)](https://github.com/EhemAi/experiment-designer-app/releases/download/v1.1.5/Experiment-Designer-1.1.5-win-x64.zip)**
+**[Download Experiment Designer v1.1.6 for Windows (64-bit)](https://github.com/EhemAi/experiment-designer-app/releases/download/v1.1.6/Experiment-Designer-1.1.6-win-x64.zip)**
 
 Ready to run. No GitHub account, coding tools, or separate .NET installation needed.
 
@@ -10,15 +10,21 @@ Ready to run. No GitHub account, coding tools, or separate .NET installation nee
 2. Open `Setup/ExperimentDesigner.Setup.exe` to install, or
    `App/ExperimentDesigner.exe` to run without installing.
 
-[Installation details](#install-and-use) · [All releases and checksums](https://github.com/EhemAi/experiment-designer-app/releases)
+[Installation details](#install-and-use) Â· [All releases and checksums](https://github.com/EhemAi/experiment-designer-app/releases)
 
-Experiment Designer 1.1.5 is a Windows desktop application for reproducible animal
+Experiment Designer 1.1.6 is a Windows desktop application for reproducible animal
 allocation in poultry, swine and other livestock trials. Researchers can prepare
 pen or cage labels before animals arrive, import animal IDs and body weights,
 generate seeded allocations, review baseline balance, and export Excel or print
 reports. Prepared treatment locations stay fixed when animal allocation is repeated.
 
 ![Synthetic study in the desktop app](docs/screenshots/study.png)
+
+## Version 1.1.6
+
+- Save updates the open file. Save As asks for confirmation before replacing an existing project and keeps the previous file as a backup.
+- Treatment labels are optional in study setup and import. Results show the treatment ID when a label is blank.
+- New Study opens the naming dialog directly from the untouched startup screen. The save prompt protects edited studies.
 
 ## Version 1.1.5
 
@@ -55,7 +61,7 @@ The binaries are unsigned. Choose a shorter installation folder if Windows short
 [SECURITY.md](SECURITY.md) and the included offline [User guide](User%20guide.html).
 
 Example: create three treatments with four replicates and four animals per pen.
-Prepare housing 101â€“112 and print labels. Import at least 48 IDs/weights, generate
+Prepare housing 101Ã¢â‚¬â€œ112 and print labels. Import at least 48 IDs/weights, generate
 an allocation, inspect unit mean BW and export. The default pool favors the heaviest
 required animals and records unused animals as EX. History retains earlier results.
 
@@ -68,9 +74,9 @@ leading-zero, alphanumeric and over-15-digit identifiers retain exact text.
 
 ## Build from source
 
-Prerequisites: Windows x64, PowerShell 7 and **.NET SDK 10.0.403** from
+Prerequisites: Windows x64, PowerShell 7 and **.NET SDK 10.0.404** from
 [Microsoft](https://dotnet.microsoft.com/download/dotnet/10.0).
-Use the Windows x64 SDK, including the Windows Desktop runtime **10.0.14**.
+Use the Windows x64 SDK, including the Windows Desktop runtime **10.0.15**.
 `global.json` pins the SDK; `runtime-version.txt` pins the packaged security patch.
 The scripts use `.tools/dotnet/dotnet.exe` when present, otherwise `dotnet` on PATH.
 No private workbooks, credentials, Node.js or Python are required to build the app.
@@ -128,18 +134,17 @@ local developer tools are excluded from source and release archives.
 
 ## Cite
 
-Emmanuel O. Alagbe. *Experiment Designer*, version 1.1.5 (2026).
+Emmanuel O. Alagbe. *Experiment Designer*, version 1.1.6 (2026).
 Affiliations: Purdue University; The Ohio State University.
 [ORCID: 0000-0002-0747-2866](https://orcid.org/0000-0002-0747-2866).
 Please cite the exact software version used in your research, publications,
 reports or presentations. See [CITATION.cff](CITATION.cff).
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23967124.svg)](https://doi.org/10.5281/zenodo.23967124)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23698895.svg)](https://doi.org/10.5281/zenodo.23698895)
 
-[Version 1.1.5 DOI](https://doi.org/10.5281/zenodo.23967124) �
 [All versions (concept DOI)](https://doi.org/10.5281/zenodo.23698895).
 The Zenodo record archives source; the ready-to-run Windows installer/portable ZIP is on
-[GitHub Releases](https://github.com/EhemAi/experiment-designer-app/releases/tag/v1.1.5).
+[GitHub Releases](https://github.com/EhemAi/experiment-designer-app/releases/tag/v1.1.6).
 
 ## Contribute, security and license
 

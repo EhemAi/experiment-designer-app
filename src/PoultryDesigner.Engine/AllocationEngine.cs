@@ -34,9 +34,16 @@ public static class AllocationEngine
             errors.Add("CV must be 0â€“100 percent and attempts must be 1â€“1,000,000.");
         if (s.FilterBalance && s.Design != Design.Rcbd) errors.Add("Balance filtering is supported only for RCBD.");
         static bool Bad(string? v) => string.IsNullOrWhiteSpace(v) || v != v.Trim();
-        if (s.Treatments.Any(x => x is null || Bad(x.Id) || Bad(x.Label))) errors.Add("Treatment IDs and labels must be nonblank and trimmed.");
-        else if (s.Treatments.Select(x => x.Id).Distinct(StringComparer.Ordinal).Count() != t || s.Treatments.Select(x => x.Label).Distinct(StringComparer.Ordinal).Count() != t)
-            errors.Add("Treatment IDs and labels must be unique.");
+        if (s.Treatments.Any(x => x is null || Bad(x.Id) || x.Label is null || x.Label != x.Label.Trim()))
+            errors.Add("Treatment IDs are required. Labels are optional. Trim IDs and labels.");
+        else
+        {
+            if (s.Treatments.Select(x => x.Id).Distinct(StringComparer.Ordinal).Count() != t)
+                errors.Add("Treatment IDs must be unique.");
+            var labels = s.Treatments.Select(x => x.Label).Where(label => label.Length > 0).ToArray();
+            if (labels.Distinct(StringComparer.Ordinal).Count() != labels.Length)
+                errors.Add("Treatment labels must be unique when provided.");
+        }
         if (s.Pool.Any(x => x is null || Bad(x.RecordId) || Bad(x.AnimalId) || x.Cohort is null || x.Cohort != x.Cohort.Trim() || !Enum.IsDefined(x.Sex) || x.WeightGrams <= 0 || x.WeightGrams > 1_000_000m))
             errors.Add("Animal identities must be nonblank and trimmed; BW must be positive and at most 1,000,000.");
         else

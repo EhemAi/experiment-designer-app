@@ -28,4 +28,4 @@ public sealed record ImportPreview<T>(T? Value, ImmutableArray<ImportIssue> Issu
 }
 public sealed record AnimalColumns(int Identity, int Weight, int? Cohort = null, int? OldLocation = null,
     int? MaternalId = null, int? PaternalId = null, int? Notes = null, int? Sex = null);
-public sealed record TreatmentColumns(int Identity, int Label, ImmutableArray<int> Factors = default);
+public sealed record TreatmentColumns(int Identity, int? Label = null, ImmutableArray<int> Factors = default);

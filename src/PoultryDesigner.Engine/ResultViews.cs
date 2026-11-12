@@ -46,7 +46,7 @@ public static class ResultViews
             decimal[] means = g.Select(x => x.MeanWeightGrams).ToArray();
             decimal mean = means.Sum() / means.Length;
             double sd = Math.Sqrt(means.Sum(x => Math.Pow((double)(x - mean), 2)) / (means.Length - 1));
-            return new TreatmentBalance(s.Treatments[g.Key].Id, s.Treatments[g.Key].Label, means.Length,
+            return new TreatmentBalance(s.Treatments[g.Key].Id, s.Treatments[g.Key].DisplayLabel, means.Length,
                 mean, means.Min(), means.Max(), sd, 100 * sd / (double)mean, mean - overall,
                 100 * (double)(mean - overall) / (double)overall);
         }).ToImmutableArray();
