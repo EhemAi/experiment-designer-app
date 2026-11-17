@@ -4,7 +4,7 @@
 
 **[Download Experiment Designer v1.1.6 for Windows (64-bit)](https://github.com/EhemAi/experiment-designer-app/releases/download/v1.1.6/Experiment-Designer-1.1.6-win-x64.zip)**
 
-[Watch the Experiment Designer tutorial on YouTube](https://youtu.be/hX4gWpjDDTQ?si=uxK6fSO1eQlVTx8k)
+[Watch the Experiment Designer tutorial on YouTube](https://youtu.be/WyrsOvgMdMU?si=rJHmLOnIg9Ueu-fs)
 
 Ready to run. No GitHub account, coding tools, or separate .NET installation needed.
 
