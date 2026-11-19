@@ -29,6 +29,7 @@ foreach ($framework in @('Microsoft.NETCore.App', 'Microsoft.WindowsDesktop.App'
     Copy-Item -LiteralPath "$dotnetRoot/shared/$framework/$frameworkVersion" -Destination "$runtimePath/shared/$framework" -Recurse
 }
 Copy-Item -LiteralPath "$PSScriptRoot/User guide.html" -Destination "$releasePath/App/User guide.html"
+foreach ($language in @('es-ES', 'es-MX')) { Copy-Item -LiteralPath "$PSScriptRoot/User guide.$language.html" -Destination "$releasePath/App/User guide.$language.html" }
 Copy-Item -LiteralPath "$PSScriptRoot/PACKAGE-README.txt" -Destination "$releasePath/README.txt"
 $packageFiles = @(foreach ($folder in @('App', 'Runtime')) { Get-ChildItem -LiteralPath (Join-Path $releasePath $folder) -File -Recurse | ForEach-Object {
     @{Path=[IO.Path]::GetRelativePath($releasePath, $_.FullName).Replace('\','/');Sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash}
@@ -48,12 +49,16 @@ try {
     if ($integrationProcess.ExitCode -ne 0) { throw 'Windows app registration or uninstall checks failed. See analysis/package-validation/windows-integration.txt.' }
     $appProcess = Start-Process -FilePath "$releasePath/App/ExperimentDesigner.exe" -ArgumentList @('--smoke', ('"' + $PSScriptRoot + '"')) -WindowStyle Hidden -Wait -PassThru
     if ($appProcess.ExitCode -ne 0) { throw 'Published app smoke checks failed.' }
+    $languageProcess = Start-Process -FilePath "$releasePath/App/ExperimentDesigner.exe" -ArgumentList @('--localization-check', ('"' + $PSScriptRoot + '"')) -WindowStyle Hidden -Wait -PassThru
+    if ($languageProcess.ExitCode -ne 0) { throw 'Published three-language checks failed. See analysis/localization-validation/check-results.txt.' }
     $startupResult = Join-Path $PSScriptRoot 'analysis/package-validation/startup-verification.txt'
     $startupProcess = Start-Process -FilePath "$releasePath/App/ExperimentDesigner.exe" -ArgumentList @('--startup-check', ('"' + $startupResult + '"')) -WindowStyle Hidden -Wait -PassThru
     if ($startupProcess.ExitCode -ne 0) { throw 'Published startup transition failed.' }
     $renderPath = Join-Path $PSScriptRoot 'analysis/package-validation/setup.png'
     $renderProcess = Start-Process -FilePath "$releasePath/Setup/ExperimentDesigner.Setup.exe" -ArgumentList @('--render', ('"' + $renderPath + '"')) -WindowStyle Hidden -Wait -PassThru
     if ($renderProcess.ExitCode -ne 0) { throw 'Installer rendering failed.' }
+    $wizardProcess = Start-Process -FilePath "$releasePath/Setup/ExperimentDesigner.Setup.exe" -ArgumentList @('--wizard-check', ('"' + $releasePath + '"'), ('"' + $PSScriptRoot + '"')) -WindowStyle Hidden -Wait -PassThru
+    if ($wizardProcess.ExitCode -ne 0) { throw 'Installer wizard checks failed. See analysis/setup-wizard-validation/check-results.txt.' }
     & $dotnetPath "$PSScriptRoot/tests/PoultryDesigner.Checks/bin/Release/net10.0/PoultryDesigner.Checks.dll" --package-check $releasePath $PSScriptRoot
     if ($LASTEXITCODE -ne 0) { throw 'Installed package checks failed.' }
 } finally { $env:DOTNET_ROOT = $savedRoot; $env:DOTNET_ROOT_X64 = $savedRootX64 }

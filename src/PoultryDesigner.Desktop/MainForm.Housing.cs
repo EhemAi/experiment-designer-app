@@ -15,7 +15,7 @@ internal sealed partial class MainForm
     {
         FlushDrafts();
         var plan = HousingLayouts.Create(Workspace.Inputs, (int)firstHousing.Value, (int)lastHousing.Value, Ui.Seed(seed.Text));
-        if (Workspace.Inputs.PreparedLayout is not null && MessageBox.Show(this,
+        if (Workspace.Inputs.PreparedLayout is not null && UiLanguage.Show(this,
             "Replace the saved layout? Previously printed sheets and labels may no longer match. Keep a copy of the old project if needed.",
             "Replace prepared layout", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
         Workspace.Revise(Workspace.Inputs with { PreparedLayout = plan }, "Prepare treatment and housing layout");

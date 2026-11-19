@@ -42,9 +42,13 @@ internal sealed partial class MainForm
         check(ReferenceEquals(document, Workspace.Document) && ReferenceEquals(binding, animals.DataSource)
             && perPen.Value == draft && setupDirty && search.Text == "B0" && selection.SequenceEqual(selectionBefore),
             "Theme switch retains project, animal binding, search, selection and pending setup values");
-        SetStage(0); render(this, "theme-switched-study"); SetStage(1); render(this, "theme-switched-animals");
+        SetStage(0);
+        var studyFields = sexMode.Parent!;
+        check(studyFields.Controls.Cast<Control>().Where(c => c is ComboBox or NumericUpDown).All(c => c.Bottom <= studyFields.ClientSize.Height),
+            "Every experimental-design field remains visible after a theme and layout change.");
+        render(this, "theme-switched-study"); SetStage(1); render(this, "theme-switched-animals");
         ToggleAppearance(false);
-        check(Theme.IsDark == before && appearance.Text == (before ? "Light mode" : "Dark mode"), "Second theme toggle restores palette and button label");
+        check(Theme.IsDark == before, "Second theme switch restores the palette");
         RedesignChecks.CheckTheme(check);
         string settings = Path.Combine(output, "appearance-test.json");
         AppearancePreferences.Save(false, settings); check(AppearancePreferences.Load(settings) == false, "Light preference persists independently of project files");

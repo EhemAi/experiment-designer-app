@@ -1,3 +1,4 @@
+using PoultryDesigner.AppCore;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.ComponentModel;
@@ -134,6 +135,7 @@ internal static class Theme
         if (root is Form form && !SizedForms.TryGetValue(form, out _))
         {
             SizedForms.Add(form, new object());
+            UiLanguage.Attach(form);
             form.Shown += (_, _) => SetInteractiveSizes(form);
             form.DpiChanged += (_, _) => form.BeginInvoke(() => { SetInteractiveSizes(form); form.PerformLayout(); });
             if (!form.KeyPreview)
@@ -167,7 +169,7 @@ internal static class Theme
                     using var brush = new SolidBrush((e.State & DrawItemState.Selected) != 0 ? Selected : Table); e.Graphics.FillRectangle(brush, e.Bounds);
                     string text = e.Index < 0 ? combo.Text : combo.Items[e.Index]?.ToString() ?? "";
                     var bounds = Rectangle.Inflate(e.Bounds, -6, 0);
-                    TextRenderer.DrawText(e.Graphics, text, combo.Font, bounds, combo.Enabled ? Text : Disabled, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis); e.DrawFocusRectangle();
+                    TextRenderer.DrawText(e.Graphics, UiLanguage.ComboText(combo, e.Index, text), combo.Font, bounds, combo.Enabled ? Text : Disabled, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis); e.DrawFocusRectangle();
                 };
             }
         }
@@ -240,7 +242,7 @@ internal sealed class StyledButton : Button
     }
     public override Size GetPreferredSize(Size proposedSize)
     {
-        var text = TextRenderer.MeasureText(Text, Font);
+        var text = TextRenderer.MeasureText(AppText.T(Text), Font);
         return new(Math.Max(MinimumSize.Width, text.Width + 24 + Padding.Horizontal), Math.Max(MinimumSize.Height, text.Height + 14 + Padding.Vertical));
     }
     protected override void OnPaint(PaintEventArgs e)
@@ -252,7 +254,7 @@ internal sealed class StyledButton : Button
         if (!Primary && !Navigation && Variant != ButtonVariant.Ghost) { using var pen = new Pen(Theme.Border); e.Graphics.DrawPath(pen, path); }
         if (Navigation && Primary) { using var marker = new SolidBrush(Theme.Teal); e.Graphics.FillRectangle(marker, 1, 9, 3, Height - 18); }
         var textArea = Navigation ? Rectangle.Inflate(ClientRectangle, -15, 0) : ClientRectangle;
-        TextRenderer.DrawText(e.Graphics, Text, Font, textArea, !Enabled ? Theme.Disabled : Variant == ButtonVariant.Danger ? Theme.Red : Primary && !Navigation ? Color.White : Theme.Text,
+        TextRenderer.DrawText(e.Graphics, AppText.T(Text), Font, textArea, !Enabled ? Theme.Disabled : Variant == ButtonVariant.Danger ? Theme.Red : Primary && !Navigation ? Color.White : Theme.Text,
             (Navigation ? TextFormatFlags.Left : TextFormatFlags.HorizontalCenter) | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         if (Focused) { using var focusPath = Theme.Round(Rectangle.Inflate(ClientRectangle, -4, -4), 4); using var pen = new Pen(Theme.Teal, 2); e.Graphics.DrawPath(pen, focusPath); }
     }

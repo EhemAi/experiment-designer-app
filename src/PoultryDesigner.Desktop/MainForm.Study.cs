@@ -20,7 +20,25 @@ internal sealed partial class MainForm
         var stack = studyStack;
         stack.ColumnStyles.Add(new(SizeType.Percent, 100));
         foreach (int size in new[] { 286, 0, 74 }) stack.RowStyles.Add(new(SizeType.Absolute, size));
-        stack.Controls.Add(Components.Card("Experimental design", designFields), 0, 0);
+        var designCard = Components.Card("Experimental design", designFields);
+        stack.Controls.Add(designCard, 0, 0);
+        bool fittingDesign = false;
+        void FitDesignRows()
+        {
+            if (fittingDesign) return;
+            int height = (int)Math.Ceiling(designFields.RowStyles.Cast<RowStyle>().Sum(row => row.Height))
+                + designCard.Controls.OfType<Label>().Single().Height + designCard.Padding.Vertical + designCard.Margin.Vertical;
+            if (Math.Abs(stack.RowStyles[0].Height - height) < 1) return;
+            fittingDesign = true;
+            try
+            {
+                stack.RowStyles[0].Height = height;
+                stack.Height = (int)Math.Ceiling(stack.RowStyles.Cast<RowStyle>().Sum(row => row.Height));
+            }
+            finally { fittingDesign = false; }
+        }
+        designFields.Layout += (_, _) => FitDesignRows();
+        designCard.Controls.OfType<Label>().Single().SizeChanged += (_, _) => FitDesignRows();
         method.Dock = DockStyle.Fill; method.AutoSize = false; method.Font = Theme.Body(9); method.Padding = new(12, 6, 12, 6); method.Margin = Padding.Empty; stack.Controls.Add(method, 0, 2);
         BuildSexSettings(); stack.Controls.Add(sexSettingsPanel, 0, 1);
         var treatmentHost = new Panel { Dock = DockStyle.Fill };

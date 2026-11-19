@@ -11,7 +11,7 @@ internal sealed partial class MainForm
     private void RefreshHighlighted()
     {
         int count = HighlightedIds().Length;
-        selectedRows.Text = $"{count:N0} animals highlighted";
+        selectedRows.Text = count == 1 ? "1 animal highlighted" : $"{count:N0} animals highlighted";
         // SelectionChanged runs inside native grid processing. Keep its geometry
         // stable; showing/hiding this bar here reenters parent and grid layout.
         foreach (var button in decisionActions.Controls.OfType<Button>()) button.Enabled = count > 0;

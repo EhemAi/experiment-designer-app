@@ -50,6 +50,7 @@ internal sealed partial class MainForm
         animalDecisionMenu.BackColor = Theme.Pale; animalDecisionMenu.ForeColor = Theme.Text;
         foreach (ToolStripItem item in animalDecisionMenu.Items) { item.BackColor = Theme.Pale; item.ForeColor = Theme.Text; }
         var bounds = animals.GetCellDisplayRectangle(animals.Columns["Decision"]!.Index, rowIndex, true);
+        UiLanguage.Apply(animalDecisionMenu);
         animalDecisionMenu.Show(animals, new Point(bounds.Left, bounds.Bottom));
     }
     private void FilterAnimals()

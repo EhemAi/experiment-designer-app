@@ -33,7 +33,7 @@ internal sealed class PagedGrid : UserControl
         foreach (DataGridViewColumn column in Grid.Columns)
         {
             column.SortMode = DataGridViewColumnSortMode.NotSortable;
-            column.MinimumWidth = Math.Clamp(TextRenderer.MeasureText(column.HeaderText, Grid.ColumnHeadersDefaultCellStyle.Font ?? Font).Width + 40, 110, 250);
+            column.MinimumWidth = Math.Clamp(TextRenderer.MeasureText(PoultryDesigner.AppCore.AppText.T(column.HeaderText), Grid.ColumnHeadersDefaultCellStyle.Font ?? Font).Width + 40, 110, 250);
             if (new[] { "BW", "CV", "Mean", "Animals", "Attempts", "Capacity", "Total", "Difference", "Sample SD" }.Any(x => column.HeaderText.Contains(x, StringComparison.OrdinalIgnoreCase)))
                 column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
         }

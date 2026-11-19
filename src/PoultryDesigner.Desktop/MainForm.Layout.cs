@@ -1,3 +1,4 @@
+using PoultryDesigner.AppCore;
 using System.Collections.Immutable;
 using System.Data;
 using PoultryDesigner.Engine;
@@ -24,7 +25,7 @@ internal sealed partial class MainForm
     private Button activateRevision = null!, previewSwap = null!, mapUnits = null!;
     private readonly Label selectedRows = Ui.Label("");
     private bool saveFailed, saving;
-    private readonly StyledButton appearance = new() { AutoSize = true, MinimumSize = new(112, 34), Margin = new(4, 2, 4, 2) };
+    private Button settingsButton = null!;
     private readonly System.Windows.Forms.Timer toastTimer = new() { Interval = 4500 };
     private readonly Label toast = Components.Message("", Theme.Success);
     private readonly ProgressBar progress = new() { Style = ProgressBarStyle.Marquee, MarqueeAnimationSpeed = 25, Width = 100, Height = 8, Visible = false };
@@ -52,9 +53,9 @@ internal sealed partial class MainForm
         file.Click += (_, _) => menu.Show(file, new Point(0, file.Height));
         var save = Ui.Button("Save", () => _ = SaveAsync()); ((StyledButton)save).Primary = true;
         saveState.AutoSize = true; saveState.MinimumSize = new(0, 36); saveState.Dock = DockStyle.None;
-        appearance.Text = Theme.IsDark ? "Light mode" : "Dark mode"; appearance.AccessibleName = "Switch color theme";
-        appearance.Click += (_, _) => ToggleAppearance();
-        files = Ui.Bar(file, save, appearance, saveState, progress, cancel); files.WrapContents = false; files.Dock = DockStyle.Fill;
+        foreach (var filter in new[] { cohortFilter, locationFilter, sourceFilter }) ((DesktopComboBox)filter).TranslateFirstItem = true;
+        ((LocalizedLabel)projectIdentity).Translate = false;
+        files = Ui.Bar(file, save, saveState, progress, cancel); files.WrapContents = false; files.Dock = DockStyle.Fill;
         projectIdentity.AutoEllipsis = true; projectIdentity.Font = Theme.Body(9); projectIdentity.Height = 44; projectIdentity.Dock = DockStyle.Top;
         navigation = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 204, FlowDirection = FlowDirection.TopDown, WrapContents = false };
         for (int i = 0; i < 4; i++)
@@ -70,8 +71,22 @@ internal sealed partial class MainForm
         var sidebarTop = new Panel { Dock = DockStyle.Top, Height = 324 }; sidebarTop.Controls.Add(navigation); sidebarTop.Controls.Add(projectIdentity); sidebarTop.Controls.Add(brand);
         counts.Dock = DockStyle.Fill; counts.AutoSize = false; counts.Font = Theme.Body(9); counts.Padding = new(8); counts.ForeColor = Theme.Muted;
         var studyStatus = Components.Card("Study status", counts); studyStatus.Dock = DockStyle.Bottom; studyStatus.Height = 132;
+        counts.TextChanged += (_, _) => { if (!loading) UiLanguage.Apply(studyStatus); };
+        int statusWidth = 0;
+        studyStatus.SizeChanged += (_, _) =>
+        {
+            if (loading || statusWidth == studyStatus.ClientSize.Width) return;
+            statusWidth = studyStatus.ClientSize.Width; UiLanguage.Apply(studyStatus);
+        };
+        settingsButton = Ui.Button("Settings", OpenSettings);
         var helpButton = Ui.Button("User guide", OpenGuide);
-        var help = Ui.Bar(helpButton); help.Dock = DockStyle.Bottom;
+        foreach (var button in new[] { settingsButton, helpButton })
+        {
+            button.AutoSize = false; button.Size = new(172, 38);
+            ((StyledButton)button).Navigation = true;
+        }
+        var help = Ui.Bar(settingsButton, helpButton); help.Dock = DockStyle.Bottom;
+        help.FlowDirection = FlowDirection.TopDown; help.WrapContents = false;
         var sidebar = new RepaintPanel { Dock = DockStyle.Fill, Padding = new(4), BackColor = Theme.Navy, Tag = "sidebar" };
         sidebar.Controls.Add(studyStatus); sidebar.Controls.Add(help); sidebar.Controls.Add(sidebarTop);
         var main = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 7, Padding = new(16, 0, 0, 0) };
@@ -107,6 +122,7 @@ internal sealed partial class MainForm
             if (e.KeyCode == Keys.S) { e.SuppressKeyPress = true; _ = SaveAsync(e.Shift); }
             if (e.KeyCode == Keys.O) { e.SuppressKeyPress = true; _ = OpenAsync(false); }
             if (e.KeyCode == Keys.N) { e.SuppressKeyPress = true; _ = NewAsync(); }
+            if (e.KeyCode == Keys.Oemcomma) { e.SuppressKeyPress = true; OpenSettings(); }
         };
         fieldErrors.ContainerControl = this;
         Disposed += (_, _) => fieldErrors.Dispose();
@@ -123,11 +139,10 @@ internal sealed partial class MainForm
     private void ToggleAppearance(bool persist = true)
     {
         Theme.SetDark(!Theme.IsDark, this);
-        appearance.Text = Theme.IsDark ? "Light mode" : "Dark mode";
         RefreshPresentation(); Invalidate(true);
         if (persist)
         {
-            try { AppearancePreferences.Save(Theme.IsDark); }
+            try { AppearancePreferences.Save(Theme.IsDark, appearancePreferencePath); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
             {
                 status.Text = "Theme changed for this session. Preference could not be saved: " + ex.Message;
@@ -147,6 +162,7 @@ internal sealed partial class MainForm
     private void RefreshPresentation()
     {
         if (generate is null) return;
+        settingsButton.Enabled = !inOperation;
         var s = Workspace.Inputs.Study; bool setup = PresentationState.SetupValid(s) && !setupDirty;
         bool ready = Workspace.IsReady && !setupDirty && !selectionDirty;
         bool current = Workspace.Document.ActiveResultId is not null && !Workspace.HasEarlierInputRevision && !Workspace.IsStale;

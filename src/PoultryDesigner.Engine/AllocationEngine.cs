@@ -31,7 +31,7 @@ public static class AllocationEngine
         if (s.Pool.Length > MaximumAnimals) errors.Add("Pool exceeds the supported resource limit.");
         if (s.SelectedRecordIds.Length != required) errors.Add("Select exactly the required number of animals; automatic selection is unavailable.");
         if (s.CvLimitPercent < 0 || s.CvLimitPercent > 100 || s.MaximumAttemptsPerBlock < 1 || s.MaximumAttemptsPerBlock > 1_000_000)
-            errors.Add("CV must be 0â€“100 percent and attempts must be 1â€“1,000,000.");
+            errors.Add("CV must be 0–100 percent and attempts must be 1–1,000,000.");
         if (s.FilterBalance && s.Design != Design.Rcbd) errors.Add("Balance filtering is supported only for RCBD.");
         static bool Bad(string? v) => string.IsNullOrWhiteSpace(v) || v != v.Trim();
         if (s.Treatments.Any(x => x is null || Bad(x.Id) || x.Label is null || x.Label != x.Label.Trim()))

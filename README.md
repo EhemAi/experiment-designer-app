@@ -2,7 +2,7 @@
 
 ## Download for Windows
 
-**[Download Experiment Designer v1.1.6 for Windows (64-bit)](https://github.com/EhemAi/experiment-designer-app/releases/download/v1.1.6/Experiment-Designer-1.1.6-win-x64.zip)**
+**[Download Experiment Designer v1.1.7 for Windows (64-bit)](https://github.com/EhemAi/experiment-designer-app/releases/download/v1.1.7/Experiment-Designer-1.1.7-win-x64.zip)**
 
 [Watch the Experiment Designer tutorial on YouTube](https://youtu.be/WyrsOvgMdMU?si=rJHmLOnIg9Ueu-fs)
 
@@ -14,13 +14,29 @@ Ready to run. No GitHub account, coding tools, or separate .NET installation nee
 
 [Installation details](#install-and-use) · [All releases and checksums](https://github.com/EhemAi/experiment-designer-app/releases)
 
-Experiment Designer 1.1.6 is a Windows desktop application for reproducible animal
+Experiment Designer 1.1.7 is a Windows desktop application for reproducible animal
 allocation in poultry, swine and other livestock trials. Researchers can prepare
 pen or cage labels before animals arrive, import animal IDs and body weights,
 generate seeded allocations, review baseline balance, and export Excel or print
 reports. Prepared treatment locations stay fixed when animal allocation is repeated.
 
 ![Synthetic study in the desktop app](docs/screenshots/study.png)
+
+## Version 1.1.7
+
+- Open **Settings** at the bottom of the sidebar (Ctrl+,) to choose English,
+  Spanish (Spain) or Spanish (Mexico), and a light or dark appearance.
+  **Save** remembers both choices; **Cancel** leaves them unchanged.
+- Interface wording, report headings and offline guides follow your language.
+  Researcher-entered names, IDs, labels, notes and weights retain their values.
+- The installation wizard offers the same three languages, the MIT license,
+  destination and shortcut choices, progress and cancellation/retry. The chosen
+  installation language becomes the initial app language.
+- Existing allocation rules, historical results and pending study edits are
+  preserved. Native checks cover both themes, settings at four layout scales,
+  language switching, project round trips and numeric Excel exports.
+
+![Application settings](docs/screenshots/settings.png)
 
 ## Version 1.1.6
 
@@ -53,7 +69,9 @@ Download the Windows x64 ZIP and SHA-256 checksum from
 Extract the complete ZIP before running or installing the app.
 
 - Portable: open `App/ExperimentDesigner.exe`.
-- Install/update for your Windows account: open `Setup/ExperimentDesigner.Setup.exe`.
+- Install/update for your Windows account: open `Setup/ExperimentDesigner.Setup.exe`,
+  choose your language, review and accept the MIT license, then select the
+  destination and shortcuts. Review your choices before selecting Install.
 - Keep App, Setup and Runtime together. No administrator access, Excel installation,
   SDK or separate .NET runtime is needed for the downloaded app.
 - Windows Installed apps and Start contain the installed app. Save studies outside
@@ -70,7 +88,7 @@ required animals and records unused animals as EX. History retains earlier resul
 RCBD, CRD and conventional allocation are supported. An initial-BW ANOVA p-value
 at or below 0.6 recommends repeating with the next seed. This is a baseline balance
 diagnostic, not proof of equivalent weights or experimental success. Review the
-design and scientific suitability yourself. No sex-allocation feature is provided.
+design and scientific suitability yourself.
 Numeric animal/treatment IDs and pen/replicate numbers sort numerically in Excel;
 leading-zero, alphanumeric and over-15-digit identifiers retain exact text.
 
@@ -131,24 +149,24 @@ $env:EXPERIMENT_DESIGNER_THEME = 'dark' # or light; unset for saved/Windows defa
 workbook. Leave it unset for synthetic tests. Never commit data or local paths.
 Projects save as `.experimentproj`; legacy `.poultryproj` files still open. Source
 observations and history remain in saved projects, so treat them as research data.
-Appearance is stored under your local application-data folder. Private inputs and
+Language and appearance preferences are stored under your local application-data folder. Private inputs and
 local developer tools are excluded from source and release archives.
 
 ## Cite
 
-Emmanuel O. Alagbe. *Experiment Designer*, version 1.1.6 (2026).
+Emmanuel O. Alagbe. *Experiment Designer*, version 1.1.7 (2026).
 Affiliations: Purdue University; The Ohio State University.
 [ORCID: 0000-0002-0747-2866](https://orcid.org/0000-0002-0747-2866).
 Please cite the exact software version used in your research, publications,
 reports or presentations. See [CITATION.cff](CITATION.cff).
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24175085.svg)](https://doi.org/10.5281/zenodo.24175085)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23698895.svg)](https://doi.org/10.5281/zenodo.23698895)
 
-[Version 1.1.6 DOI](https://doi.org/10.5281/zenodo.24175085).
+[Archived versions on Zenodo](https://doi.org/10.5281/zenodo.23698895).
 
 [All versions (concept DOI)](https://doi.org/10.5281/zenodo.23698895).
 The Zenodo record archives source; the ready-to-run Windows installer/portable ZIP is on
-[GitHub Releases](https://github.com/EhemAi/experiment-designer-app/releases/tag/v1.1.6).
+[GitHub Releases](https://github.com/EhemAi/experiment-designer-app/releases/tag/v1.1.7).
 
 ## Contribute, security and license
 

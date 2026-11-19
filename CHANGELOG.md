@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.7] - 2026-11-19
+
+- Add a dedicated Settings dialog for application language and appearance, with Save/Cancel, remembered preferences and safe recovery from failed writes. Keep the study workspace and pending edits intact.
+- Support English, Spanish (Spain) and Spanish (Mexico) throughout the application, report metadata and offline guides. Review terminology, grammar, number agreement and regional wording while preserving researcher-entered values.
+- Add a multilingual installation wizard with MIT license acceptance, destination selection, Start Menu and desktop shortcut choices, installation progress, cancellation/retry and completion controls.
+- Keep the existing allocation engine and study history; add native checks for settings, language changes, compact layouts, report exports and installation-to-app language handoff.
+- Preserve the existing YouTube tutorial link.
+
 ## [1.1.6] - 2026-11-12
 
 - Use standard Save and Save As behavior, with confirmed replacement and backups.

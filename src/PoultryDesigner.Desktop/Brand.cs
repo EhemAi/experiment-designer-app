@@ -1,3 +1,4 @@
+using PoultryDesigner.AppCore;
 using System.Drawing.Drawing2D;
 
 namespace PoultryDesigner.Desktop;
@@ -68,12 +69,12 @@ internal sealed class LaunchArtwork : Control
         using var caption = new Font(bodyBase.FontFamily, 12 * scale, FontStyle.Regular, GraphicsUnit.Pixel);
         const TextFormatFlags flags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding;
         TextRenderer.DrawText(g, "Experiment Designer", heading, BoundsAt(32, 183, 536, 46), Theme.Text, flags);
-        TextRenderer.DrawText(g, "Precision in experimental allocation", subtitle, BoundsAt(32, 241, 536, 26), Theme.Muted, flags);
+        TextRenderer.DrawText(g, AppText.T("Precision in experimental allocation"), subtitle, BoundsAt(32, 241, 536, 26), Theme.Muted, flags);
         using var creator = new Font(bodyBase.FontFamily, 12 * scale, FontStyle.Regular, GraphicsUnit.Pixel);
-        TextRenderer.DrawText(g, CreatorCredit, creator, BoundsAt(32, 274, 536, 22), Theme.Secondary, flags);
+        TextRenderer.DrawText(g, AppText.T(CreatorCredit), creator, BoundsAt(32, 274, 536, 22), Theme.Secondary, flags);
         using var divider = new Pen(Theme.Divider, Math.Max(1, scale));
         g.DrawLine(divider, ox + 52 * scale, oy + 304 * scale, ox + 548 * scale, oy + 304 * scale);
-        TextRenderer.DrawText(g, "Preparing your workspace", caption, BoundsAt(32, 315, 536, 22), Theme.Muted, flags);
+        TextRenderer.DrawText(g, AppText.T("Preparing your workspace"), caption, BoundsAt(32, 315, 536, 22), Theme.Muted, flags);
         for (int i = 0; i < 3; i++)
         {
             int alpha = (int)(65 + 150 * (.5 + .5 * Math.Sin(ms / 350 - i * .8)));
@@ -105,7 +106,7 @@ internal sealed class StartupContext : ApplicationContext
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Could not start Experiment Designer: " + ex.Message, "Experiment Designer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UiLanguage.Show("Could not start Experiment Designer: " + ex.Message, "Experiment Designer", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 splash.Dispose(); MainForm?.Dispose(); ExitThread();
             }
         });
