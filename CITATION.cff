@@ -3,7 +3,7 @@ message: "If you use Experiment Designer in your research, please cite this soft
 type: software
 title: Experiment Designer
 version: 1.1.7
-doi: 10.5281/zenodo.23698895
+doi: 10.5281/zenodo.24380255
 date-released: '2026-11-19'
 license: MIT
 repository-code: https://github.com/EhemAi/experiment-designer-app

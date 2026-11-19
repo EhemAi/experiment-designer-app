@@ -160,9 +160,9 @@ Affiliations: Purdue University; The Ohio State University.
 Please cite the exact software version used in your research, publications,
 reports or presentations. See [CITATION.cff](CITATION.cff).
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23698895.svg)](https://doi.org/10.5281/zenodo.23698895)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24380255.svg)](https://doi.org/10.5281/zenodo.24380255)
 
-[Archived versions on Zenodo](https://doi.org/10.5281/zenodo.23698895).
+[Version 1.1.7 DOI](https://doi.org/10.5281/zenodo.24380255).
 
 [All versions (concept DOI)](https://doi.org/10.5281/zenodo.23698895).
 The Zenodo record archives source; the ready-to-run Windows installer/portable ZIP is on
