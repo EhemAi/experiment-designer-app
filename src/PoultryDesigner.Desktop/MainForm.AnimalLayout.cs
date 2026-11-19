@@ -1,4 +1,5 @@
 using System.Data;
+using PoultryDesigner.AppCore;
 using PoultryDesigner.Engine;
 namespace PoultryDesigner.Desktop;
 
@@ -62,7 +63,7 @@ internal sealed partial class MainForm
             if (loading || e.RowIndex < 0 || e.RowIndex >= animals.Rows.Count || e.ColumnIndex < 0 || e.ColumnIndex >= animals.Columns.Count || animals.Columns[e.ColumnIndex].Name != "Decision") return;
             string value = Convert.ToString(animals.Rows[e.RowIndex].Cells[e.ColumnIndex].Value) ?? "";
             bool automatic = Workspace.Inputs.AutomaticPoolSelection;
-            e.Value = automatic ? value == "Include" ? "Selected" : "EX" : (value == "Include" ? "Included" : value == "Exclude" ? "Excluded" : "Pending") + " ▾"; e.FormattingApplied = true;
+            e.Value = AppText.T(automatic ? value == "Include" ? "Selected" : "EX" : value == "Include" ? "Included" : value == "Exclude" ? "Excluded" : "Pending") + (automatic ? "" : " ▾"); e.FormattingApplied = true;
             e.CellStyle!.ForeColor = value == "Pending" ? Theme.Warning : value == "Include" ? Theme.Success : Theme.Muted;
             e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
         };

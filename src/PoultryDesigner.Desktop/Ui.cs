@@ -1,3 +1,4 @@
+using PoultryDesigner.AppCore;
 using System.Data;
 using System.Globalization;
 
@@ -23,13 +24,13 @@ internal static class Ui
         button.FlatAppearance.BorderColor = Theme.Border;
         button.Click += (_, _) => action(); return button;
     }
-    internal static Label Label(string text) => new() { Text = text, AutoSize = true, ForeColor = Ink, Margin = new(4, 9, 4, 3) };
+    internal static Label Label(string text) => new LocalizedLabel() { Text = text, AutoSize = true, ForeColor = Ink, Margin = new(4, 9, 4, 3) };
     internal static FlowLayoutPanel Bar(params Control[] controls)
     {
         var bar = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true, Padding = new(2, 4, 2, 4), BackColor = Theme.Canvas };
         bar.Controls.AddRange(controls); return bar;
     }
-    internal static DataGridView Grid(bool edit = false) => new()
+    private static DataGridView CreateGrid(bool edit) => new()
     {
         Dock = DockStyle.Fill,
         BackgroundColor = Theme.Canvas,
@@ -54,6 +55,7 @@ internal static class Ui
         DefaultCellStyle = new() { BackColor = Theme.Table, ForeColor = Ink, SelectionBackColor = Theme.Selected, SelectionForeColor = Ink, Padding = new(9, 5, 9, 5) },
         AlternatingRowsDefaultCellStyle = new() { BackColor = Theme.Stripe }
     };
+    internal static DataGridView Grid(bool edit = false) { var grid = CreateGrid(edit); UiLanguage.Grid(grid); return grid; }
     internal static TextBox Text(string placeholder = "", bool multiline = false) => new()
     {
         Width = 260,
@@ -67,7 +69,7 @@ internal static class Ui
         ScrollBars = multiline ? ScrollBars.Vertical : ScrollBars.None
     };
     internal static ComboBox Combo(IEnumerable<string> values)
-    { var combo = new DesktopComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 200 }; combo.Items.AddRange(values.Cast<object>().ToArray()); return combo; }
+    { var choices = values.ToArray(); var combo = new DesktopComboBox { TranslateItems = choices.Length > 0, DropDownStyle = ComboBoxStyle.DropDownList, Width = 200 }; combo.Items.AddRange(choices.Cast<object>().ToArray()); return combo; }
     internal static Panel Tabs(params (string Name, Control View)[] pages)
     {
         var panel = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Canvas };
@@ -76,7 +78,7 @@ internal static class Ui
         {
             bool active = tabs.SelectedIndex == e.Index; using var brush = new SolidBrush(active ? Theme.Selected : Theme.Canvas); e.Graphics.FillRectangle(brush, e.Bounds);
             using var font = Theme.Body(9, active ? FontStyle.Bold : FontStyle.Regular);
-            TextRenderer.DrawText(e.Graphics, tabs.TabPages[e.Index].Text, font, e.Bounds, active ? Theme.Text : Theme.Muted, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            TextRenderer.DrawText(e.Graphics, AppText.T(tabs.TabPages[e.Index].Text), font, e.Bounds, active ? Theme.Text : Theme.Muted, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
             if (active) { using var marker = new SolidBrush(Theme.Teal); e.Graphics.FillRectangle(marker, e.Bounds.X, e.Bounds.Bottom - 3, e.Bounds.Width, 3); }
             if (tabs.Focused && active) ControlPaint.DrawFocusRectangle(e.Graphics, Rectangle.Inflate(e.Bounds, -4, -4));
         };
@@ -116,6 +118,10 @@ internal static class Ui
 // must reserve their real height, including when controls wrap onto new rows.
 internal sealed class DesktopComboBox : ComboBox
 {
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    internal bool TranslateItems { get; set; } = true;
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    internal bool TranslateFirstItem { get; set; }
     public override Size GetPreferredSize(Size proposedSize)
     {
         var size = base.GetPreferredSize(proposedSize);

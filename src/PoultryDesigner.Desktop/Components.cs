@@ -6,7 +6,7 @@ namespace PoultryDesigner.Desktop;
 internal static class Components
 {
     internal static readonly ToolTip Help = new() { AutoPopDelay = 16000, InitialDelay = 450, ShowAlways = true };
-    internal static Label Message(string text, Color? color = null) => new()
+    internal static Label Message(string text, Color? color = null) => new LocalizedLabel()
     {
         Text = text,
         AutoSize = false,
@@ -51,7 +51,7 @@ internal static class Components
         // Grid tracking tooltips compete with native cell hover/scroll handling.
         // Keep instructions accessible without creating a tooltip for the grid.
         if (control is DataGridView grid) { grid.ShowCellToolTips = false; grid.AccessibleDescription = text; return; }
-        if (Help.GetToolTip(control) != text) Help.SetToolTip(control, text);
+        if (Help.GetToolTip(control) != text) UiLanguage.Tip(control, text);
     }
 }
 

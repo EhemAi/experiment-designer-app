@@ -81,7 +81,7 @@ internal static class DesktopSmoke
             using var main = new MainForm(); main.StartPosition = FormStartPosition.Manual; main.Location = new(-25000, -25000); main.Show(); Application.DoEvents();
             await main.ExerciseStartupSavePromptForSmoke(Check);
             for (int i = 0; i < 4; i++) { main.StageForSmoke(i); Render(main, new[] { "study-empty", "animals-empty", "allocation-empty", "history-empty" }[i]); }
-            main.LoadForSmoke(file); main.ExerciseCorrectionsForSmoke(file, output, Check, Render); main.ExerciseForSmoke(Check); await main.ExerciseReviewForSmoke(file, Check, Render); await main.ExerciseAnimalPagingForSmoke(file, Check);
+            main.LoadForSmoke(file); main.StageForSmoke(0); Render(main, "release-study"); main.ExerciseCorrectionsForSmoke(file, output, Check, Render); main.ExerciseForSmoke(Check); await main.ExerciseReviewForSmoke(file, Check, Render); await main.ExerciseAnimalPagingForSmoke(file, Check);
             await main.ExerciseSexForSmoke(file, Check, Render);
             await main.ExerciseBalanceNoticeForSmoke(file, Check, Render);
             main.ExerciseAllTabsForSmoke(Check, Render);

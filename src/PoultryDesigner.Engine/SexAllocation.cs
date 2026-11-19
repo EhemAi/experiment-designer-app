@@ -61,9 +61,9 @@ public static class SexAllocation
 
     public static AnimalSex Parse(string value) => value.Trim().ToUpperInvariant() switch
     {
-        "" or "U" or "UNK" or "UNKNOWN" or "NA" or "N/A" => AnimalSex.Unknown,
-        "M" or "MALE" or "B" => AnimalSex.Male,
-        "F" or "FEMALE" or "G" => AnimalSex.Female,
+        "" or "U" or "UNK" or "UNKNOWN" or "NA" or "N/A" or "N/D" or "DESCONOCIDO" or "DESCONOCIDA" or "NO ESPECIFICADO" => AnimalSex.Unknown,
+        "M" or "MALE" or "B" or "MACHO" or "MASCULINO" => AnimalSex.Male,
+        "F" or "FEMALE" or "G" or "H" or "HEMBRA" or "FEMENINO" => AnimalSex.Female,
         _ => throw new ArgumentException("Sex: use Male/M/B, Female/F/G, or Unknown; blank means Unknown.")
     };
 

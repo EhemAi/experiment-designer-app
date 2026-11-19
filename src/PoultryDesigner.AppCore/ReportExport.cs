@@ -13,7 +13,7 @@ public static class ReportExport
     private const string RelNs = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     public static void Excel(AllocationReport report, string path, bool overwrite = false)
     {
-        report = LayoutReports.ForExcel(report);
+        report = ReportLanguage.Display(LayoutReports.ForExcel(report));
         Validate(report);
         Atomic(path, ".xlsx", overwrite, stream => {
             using var zip = new ZipArchive(stream, ZipArchiveMode.Create, true);
@@ -78,7 +78,7 @@ public static class ReportExport
                     w.WriteStartElement("pageMargins"); foreach (string side in new[] { "left", "right", "top", "bottom" }) Attr(w, side, 0.4); Attr(w, "header", 0.2); Attr(w, "footer", 0.2); w.WriteEndElement();
                     w.WriteStartElement("pageSetup"); Attr(w, "paperSize", 1); Attr(w, "orientation", "landscape"); w.WriteEndElement();
                     w.WriteStartElement("headerFooter"); w.WriteElementString("oddHeader", "&L" + report.Title.Replace("&", "&&") + "&R" + table.Name);
-                    w.WriteElementString("oddFooter", "&LChosen allocation snapshot&RPage &P of &N"); w.WriteEndElement(); w.WriteEndElement(); });
+                    w.WriteElementString("oddFooter", "&L" + AppText.T("Chosen allocation snapshot") + "&R" + AppText.T("Page") + " &P / &N"); w.WriteEndElement(); w.WriteEndElement(); });
             }
         });
     }
@@ -108,20 +108,21 @@ public static class ReportExport
     }
     public static void Html(AllocationReport report, string path, bool overwrite = false, string? fontDirectory = null)
     {
+        report = ReportLanguage.Display(AllocationReports.Printable(report));
         Validate(report);
         Atomic(path, ".html", overwrite, stream => {
             using var w = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true);
             string H(string text) => WebUtility.HtmlEncode(text);
-            w.Write("<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>" + H(report.Title) + "</title><style>");
+            w.Write("<!doctype html><html lang=\"" + AppText.Code + "\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>" + H(report.Title) + "</title><style>");
             if (fontDirectory is not null) foreach (var font in new[] { ("Manrope", "Manrope-Regular.otf", 400), ("Manrope", "Manrope-Bold.otf", 700), ("Poppins", "Poppins-Regular.otf", 400) })
                 // The caller supplies the installed asset directory; filenames are literals, never workbook or report data.
                 // nosemgrep: csharp.lang.security.filesystem.unsafe-path-combine.unsafe-path-combine
                 w.Write($"@font-face{{font-family:'{font.Item1}';font-weight:{font.Item3};src:url(data:font/otf;base64,{Convert.ToBase64String(File.ReadAllBytes(Path.Combine(fontDirectory, font.Item2)))}) format('opentype')}}");
             w.Write("body{font:11pt Manrope,'Segoe UI',sans-serif;color:#17191b;margin:32px}h1,h2{font-family:Poppins,Manrope,sans-serif}h1{font-size:20pt}h2{font-size:15pt}p{line-height:1.5}table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:10pt}th{text-align:left;background:#202326;color:white}td,th{padding:8px;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap;border-bottom:1px solid #d8dcde}tr:nth-child(even){background:#f3f5f5}section{margin-top:30px}thead{display:table-header-group}.context{border-left:4px solid #429e84;padding-left:12px}.tools{background:#17191b;color:white;padding:14px}.tools button{font:inherit;padding:8px 16px;background:#429e84;color:white;border:0;cursor:pointer}@page{size:letter landscape;margin:12mm}@media print{body{margin:0;font-size:10pt}.tools{display:none}section{break-before:page}section:first-of-type{break-before:auto}h2{break-after:avoid}tr{break-inside:avoid}th{print-color-adjust:exact;-webkit-print-color-adjust:exact}} </style><body>");
-            w.Write("<div class=\"tools\"><button type=\"button\" onclick=\"window.print()\">Print / Save as PDF</button> <span>Landscape report. All rows are included.</span></div><h1>" + H(report.Title) + "</h1><p class=\"context\">" + H(report.Context) + "</p>");
-            foreach (var table in AllocationReports.Printable(report).Tables) {
+            w.Write("<div class=\"tools\"><button type=\"button\" onclick=\"window.print()\">" + H(AppText.T("Print / Save as PDF")) + "</button> <span>" + H(AppText.T("Landscape report. All rows are included.")) + "</span></div><h1>" + H(report.Title) + "</h1><p class=\"context\">" + H(report.Context) + "</p>");
+            foreach (var table in report.Tables) {
                 w.Write("<section><h2>" + H(table.Name) + "</h2><p>" + H(table.Description) + "</p>");
-                if (table.Rows.IsEmpty) { w.Write("<p>No records for this revision.</p></section>"); continue; }
+                if (table.Rows.IsEmpty) { w.Write("<p>" + H(AppText.T("No records for this revision.")) + "</p></section>"); continue; }
                 w.Write("<table><thead><tr>"); foreach (var c in table.Columns) w.Write("<th scope=\"col\">" + H(c.Name) + "</th>"); w.Write("</tr></thead><tbody>");
                 foreach (var row in table.Rows) { w.Write("<tr>"); foreach (var cell in row) w.Write("<td>" + H(AllocationReports.PrintedText(cell)) + "</td>"); w.Write("</tr>"); }
                 w.Write("</tbody></table></section>");

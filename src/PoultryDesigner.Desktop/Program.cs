@@ -1,3 +1,5 @@
+using PoultryDesigner.AppCore;
+
 namespace PoultryDesigner.Desktop;
 
 internal static class Program
@@ -6,6 +8,8 @@ internal static class Program
     private static int Main(string[] args)
     {
         ApplicationConfiguration.Initialize();
+        if (args.Length == 0) AppText.Select(LanguagePreference.Load(), remember: false);
+        if (args.Length == 2 && args[0] == "--localization-check") return MainForm.CheckLocalization(args[1]);
         if (args.Length == 2 && args[0] == "--sex-settings-check")
         {
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
@@ -33,7 +37,7 @@ internal static class Program
             return DesktopSmoke.Run(args[1]);
         }
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
-        Application.ThreadException += (_, e) => MessageBox.Show(e.Exception.Message, "Experiment Designer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        Application.ThreadException += (_, e) => UiLanguage.Show(e.Exception.Message, "Experiment Designer", MessageBoxButtons.OK, MessageBoxIcon.Error);
         using var startup = new StartupContext(); Application.Run(startup); return 0;
     }
 }

@@ -50,8 +50,11 @@ internal sealed partial class MainForm : Form
     private sealed record MethodOption(Design Code, string Label) { public override string ToString() => Label; }
     private sealed record RevisionOption(string Id, string Label) { public override string ToString() => Label; }
 
-    internal MainForm()
+    private readonly string? languagePreferencePath, appearancePreferencePath;
+    internal MainForm(string? languagePreferencePath = null, string? appearancePreferencePath = null)
     {
+        this.languagePreferencePath = languagePreferencePath;
+        this.appearancePreferencePath = appearancePreferencePath;
         AutoScaleMode = AutoScaleMode.Dpi; AutoScaleDimensions = new(96, 96);
         Text = "Experiment Designer"; Icon = Brand.Icon; Font = Theme.Body(); BackColor = Theme.Navy;
         BuildShell(); BuildSetup(); BuildAnimals(); BuildAllocation(); BuildHistory(); Theme.Apply(this); Reload(); SetStage(0);
@@ -205,7 +208,7 @@ internal sealed partial class MainForm : Form
     });
     private void OpenGuide() => Guard(() =>
     {
-        string path = Path.Combine(AppContext.BaseDirectory, "User guide.html");
+        string path = Path.Combine(AppContext.BaseDirectory, AppText.Language == AppLanguage.English ? "User guide.html" : "User guide." + AppText.Code + ".html");
         if (!File.Exists(path)) throw new FileNotFoundException("The user guide is missing from this application package.");
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
     });
@@ -233,7 +236,7 @@ internal sealed partial class MainForm : Form
     });
     private void Import(bool animal) => Guard(() =>
     {
-        FlushDrafts(); using var open = new OpenFileDialog { Filter = "Animal/treatment tables|*.csv;*.tsv;*.xlsx;*.xlsm", Title = animal ? "Choose animal source" : "Choose treatment source" };
+        FlushDrafts(); using var open = new OpenFileDialog { Filter = AppText.T("Animal/treatment tables|*.csv;*.tsv;*.xlsx;*.xlsm"), Title = AppText.T(animal ? "Choose animal source" : "Choose treatment source") };
         if (open.ShowDialog(this) != DialogResult.OK) return;
         using var dialog = new ImportDialog(DataImport.Read(open.FileName), animal, Workspace.Inputs.Study.Demonstration);
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
@@ -400,8 +403,8 @@ internal sealed partial class MainForm : Form
             string filename = new(Workspace.Document.Name.Take(100).Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c).ToArray());
             using var save = new SaveFileDialog
             {
-                Title = saveAs ? "Save Project As" : "Save Project",
-                Filter = "Experiment Designer project|*" + ProjectStore.ProjectExtension,
+                Title = AppText.T(saveAs ? "Save Project As" : "Save Project"),
+                Filter = AppText.T("Experiment Designer project") + "|*" + ProjectStore.ProjectExtension,
                 DefaultExt = ProjectStore.ProjectExtension.TrimStart('.'),
                 AddExtension = true,
                 OverwritePrompt = false,
@@ -416,7 +419,7 @@ internal sealed partial class MainForm : Form
                 {
                     if (!File.Exists(save.FileName)) return;
                     string digest = ProjectStore.FileDigest(save.FileName);
-                    var answer = MessageBox.Show(this, $"{Path.GetFileName(save.FileName)} already exists. Replace it?",
+                    var answer = UiLanguage.Show(this, $"{Path.GetFileName(save.FileName)} already exists. Replace it?",
                         "Confirm Save As", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
                     if (answer == DialogResult.Yes) replacementFileDigest = digest;
                     else args.Cancel = true;
@@ -424,7 +427,7 @@ internal sealed partial class MainForm : Form
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
                     args.Cancel = true;
-                    MessageBox.Show(this, ex.Message, "Save Project", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    UiLanguage.Show(this, ex.Message, "Save Project", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             };
             if (save.ShowDialog(this) != DialogResult.OK) return false;
@@ -437,7 +440,7 @@ internal sealed partial class MainForm : Form
     private async Task<bool> MayDiscardAsync()
     {
         if (!HasUnsavedWork) return true;
-        var choice = MessageBox.Show(this, "Save your current project and pending edits before continuing?", "Unsaved work", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+        var choice = UiLanguage.Show(this, "Save your current project and pending edits before continuing?", "Unsaved work", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
         if (choice == DialogResult.Cancel) return false; if (choice == DialogResult.No) return true; return await SaveAsync();
     }
     private async Task NewAsync()
@@ -449,7 +452,7 @@ internal sealed partial class MainForm : Form
     private async Task OpenAsync(bool recover)
     {
         if (inOperation || !await MayDiscardAsync()) return;
-        using var open = new OpenFileDialog { Filter = "Experiment Designer projects|*.experimentproj;*.poultryproj|Experiment Designer project|*.experimentproj|Legacy projects|*.poultryproj", Title = recover ? "Choose the main project whose .bak file should be recovered" : "Open project" };
+        using var open = new OpenFileDialog { Filter = AppText.T("Experiment Designer projects|*.experimentproj;*.poultryproj|Experiment Designer project|*.experimentproj|Legacy projects|*.poultryproj"), Title = AppText.T(recover ? "Choose the main project whose .bak file should be recovered" : "Open project") };
         if (open.ShowDialog(this) != DialogResult.OK) return;
         var previous = Workspace.Document;
         await OperationAsync(token => Workspace.OpenAsync(open.FileName, true, token, recover));

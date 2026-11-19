@@ -8,15 +8,57 @@ using PoultryDesigner.AppCore;
 namespace PoultryDesigner.Setup;
 
 // Windows shell registration belongs to Setup, never to the allocation application.
-internal sealed class WindowsIntegration(string registryName, string programs, string desktop)
+internal sealed class WindowsIntegration(string registryName, string programs, string desktop, string menuFolder = "Experiment Designer", string language = "en")
 {
     private const string RegistryParent = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\";
     private const string RecordName = "maintenance.json";
     private sealed record OwnedFile(string Path, string Hash);
-    private sealed record Maintenance(string Product, string Root, string RegistryName, string Programs, string Desktop, OwnedFile[] Files);
+    private sealed record Maintenance(string Product, string Root, string RegistryName, string Programs, string Desktop, OwnedFile[] Files, string MenuFolder = "Experiment Designer", string Language = "en");
     internal static WindowsIntegration CurrentUser => new("ExperimentDesigner", Environment.GetFolderPath(Environment.SpecialFolder.Programs), Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
+    internal static string DefaultRoot
+    {
+        get
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RegistryParent + "ExperimentDesigner");
+            return key?.GetValue("InstallLocation") as string ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ExperimentDesigner");
+        }
+    }
+    internal static (string MenuFolder, string Language) Preferences(string root)
+    {
+        var previous = ReadMaintenance(root);
+        return (previous?.MenuFolder ?? "Experiment Designer", previous?.Language ?? "en");
+    }
+    internal static WindowsIntegration ForInstallation(string menuFolder, string language)
+    {
+        ValidateMenuFolder(menuFolder);
+        return new("ExperimentDesigner", Environment.GetFolderPath(Environment.SpecialFolder.Programs),
+            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), menuFolder, language);
+    }
+    internal static void ValidateMenuFolder(string folder)
+    {
+        ArgumentNullException.ThrowIfNull(folder);
+        if (folder.Length == 0) return;
+        if (Path.IsPathRooted(folder) || folder.Split('/', '\\').Any(part =>
+            string.IsNullOrWhiteSpace(part) || part is "." or ".." || part.EndsWith(' ') || part.EndsWith('.') ||
+            part.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+            System.Text.RegularExpressions.Regex.IsMatch(part, @"^(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])($|\.)", System.Text.RegularExpressions.RegexOptions.IgnoreCase)))
+            throw new ArgumentException("Choose a valid relative Start Menu folder.");
+        if (Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), folder, "Experiment Designer.lnk").Length >= 260)
+            throw new ArgumentException("Choose a shorter Start Menu folder.");
+    }
+    internal void ValidateRegistration(string root, bool desktopShortcut)
+    {
+        ValidateMenuFolder(menuFolder);
+        using var existing = Registry.CurrentUser.OpenSubKey(RegistryPath);
+        if (existing is not null && !string.Equals(existing.GetValue("InstallLocation") as string, Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Another Experiment Designer installation is registered. Choose its installation folder to update it.");
+        if (menuFolder.Length > 0 && !OwnsLink(StartLink, root) || desktopShortcut && !OwnsLink(DesktopLink, root))
+            throw new IOException("A different Experiment Designer shortcut already exists.");
+        // Resolve the old registration now, so a damaged receipt fails before copying files.
+        _ = ReadMaintenance(root);
+    }
     private string RegistryPath => RegistryParent + registryName;
-    private string StartLink => Path.Combine(programs, "Experiment Designer", "Experiment Designer.lnk");
+    private string StartLink => Path.Combine(programs, menuFolder, "Experiment Designer.lnk");
     private string DesktopLink => Path.Combine(desktop, "Experiment Designer.lnk");
     private static string Hash(string file) { using var stream = File.OpenRead(file); return Convert.ToHexString(SHA256.HashData(stream)); }
     private static string Under(string root, string relative)
@@ -34,6 +76,7 @@ internal sealed class WindowsIntegration(string registryName, string programs, s
         if (!File.Exists(path)) return null;
         var record = JsonSerializer.Deserialize<Maintenance>(File.ReadAllText(path)) ?? throw new InvalidDataException("Missing maintenance record.");
         if (record.Product != Installation.Product || !string.Equals(record.Root, Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase) || record.Files is null) throw new InvalidDataException("Foreign maintenance record.");
+        ValidateMenuFolder(record.MenuFolder);
         foreach (var file in record.Files) _ = Under(Under(root, "Installer"), file.Path);
         return record;
     }
@@ -71,7 +114,8 @@ internal sealed class WindowsIntegration(string registryName, string programs, s
         root = Path.GetFullPath(root);
         using (var existing = Registry.CurrentUser.OpenSubKey(RegistryPath))
             if (existing is not null && !string.Equals(existing.GetValue("InstallLocation") as string, root, StringComparison.OrdinalIgnoreCase)) throw new IOException("Another Experiment Designer installation is registered. Its entry was preserved.");
-        if (!OwnsLink(StartLink, root) || (desktopShortcut && !OwnsLink(DesktopLink, root))) throw new IOException("A different Experiment Designer shortcut was preserved.");
+        ValidateRegistration(root, desktopShortcut);
+        if ((menuFolder.Length > 0 && !OwnsLink(StartLink, root)) || (desktopShortcut && !OwnsLink(DesktopLink, root))) throw new IOException("A different Experiment Designer shortcut was preserved.");
         string maintenance = Under(root, "Installer");
         var previous = ReadMaintenance(root);
         var owned = previous?.Files.ToDictionary(f => f.Path, StringComparer.OrdinalIgnoreCase) ?? [];
@@ -92,9 +136,19 @@ internal sealed class WindowsIntegration(string registryName, string programs, s
         File.WriteAllText(scriptPath, Bootstrap(root, registryName.StartsWith("ExperimentDesigner.Test-", StringComparison.Ordinal)), new System.Text.UTF8Encoding(true));
         files.Add(new("Uninstall.ps1", Hash(scriptPath)));
         Directory.CreateDirectory(maintenance);
-        File.WriteAllText(Under(maintenance, RecordName), JsonSerializer.Serialize(new Maintenance(Installation.Product, root, registryName, programs, desktop, files.ToArray())));
+        File.WriteAllText(Under(maintenance, RecordName), JsonSerializer.Serialize(new Maintenance(Installation.Product, root, registryName, programs, desktop, files.ToArray(), menuFolder, language)));
         string targetApp = Installation.Executable(root, receipt);
-        WriteLink(StartLink, root, targetApp);
+        if (menuFolder.Length > 0) WriteLink(StartLink, root, targetApp);
+        if (previous is not null && previous.MenuFolder.Length > 0)
+        {
+            string oldLink = Path.GetFullPath(Path.Combine(previous.Programs, previous.MenuFolder, "Experiment Designer.lnk"));
+            if (menuFolder.Length == 0 || !string.Equals(oldLink, Path.GetFullPath(StartLink), StringComparison.OrdinalIgnoreCase))
+            {
+                if (File.Exists(oldLink) && OwnsLink(oldLink, root)) File.Delete(oldLink);
+                string oldFolder = Path.GetDirectoryName(oldLink)!;
+                if (Directory.Exists(oldFolder) && !Directory.EnumerateFileSystemEntries(oldFolder).Any()) Directory.Delete(oldFolder);
+            }
+        }
         if (desktopShortcut || File.Exists(DesktopLink) && OwnsLink(DesktopLink, root)) WriteLink(DesktopLink, root, targetApp);
         using var key = Registry.CurrentUser.CreateSubKey(RegistryPath);
         key.SetValue("DisplayName", "Experiment Designer"); key.SetValue("DisplayVersion", receipt.Version);
@@ -145,7 +199,7 @@ internal sealed class WindowsIntegration(string registryName, string programs, s
         if (record is null) { if (test) throw new InvalidDataException("No test maintenance registration."); return CurrentUser; } // Older installations.
         if (test && !record.RegistryName.StartsWith("ExperimentDesigner.Test-", StringComparison.Ordinal)) throw new InvalidDataException("Only a test installation may be removed without confirmation.");
         if (!test && record.RegistryName != "ExperimentDesigner") throw new InvalidDataException("Unexpected installation registration.");
-        return new(record.RegistryName, record.Programs, record.Desktop);
+        return new(record.RegistryName, record.Programs, record.Desktop, record.MenuFolder, record.Language);
     }
     internal void Unregister(string root)
     {
@@ -154,8 +208,8 @@ internal sealed class WindowsIntegration(string registryName, string programs, s
         {
             if (key is not null && string.Equals(key.GetValue("InstallLocation") as string, root, StringComparison.OrdinalIgnoreCase)) Registry.CurrentUser.DeleteSubKeyTree(RegistryPath, false);
         }
-        foreach (string link in new[] { StartLink, DesktopLink }) if (File.Exists(link) && OwnsLink(link, root)) File.Delete(link);
-        string menuFolder = Path.GetDirectoryName(StartLink)!; if (Directory.Exists(menuFolder) && !Directory.EnumerateFileSystemEntries(menuFolder).Any()) Directory.Delete(menuFolder);
+        foreach (string link in (menuFolder.Length > 0 ? new[] { StartLink, DesktopLink } : new[] { DesktopLink })) if (File.Exists(link) && OwnsLink(link, root)) File.Delete(link);
+        string menuDirectory = Path.GetDirectoryName(StartLink)!; if (menuFolder.Length > 0 && Directory.Exists(menuDirectory) && !Directory.EnumerateFileSystemEntries(menuDirectory).Any()) Directory.Delete(menuDirectory);
         var record = ReadMaintenance(root); if (record is null) return;
         string maintenance = Under(root, "Installer");
         foreach (var file in record.Files) { string path = Under(maintenance, file.Path); if (File.Exists(path) && Hash(path) == file.Hash) File.Delete(path); }
@@ -175,7 +229,9 @@ internal sealed class WindowsIntegration(string registryName, string programs, s
         try { ValidateRoot(tooLong, Installation.ReadPackage(package).Version); } catch (ArgumentException) { rejectedLongPath = true; }
         Check(rejectedLongPath && !Directory.Exists(tooLong), "Overlong shortcut roots are rejected before creating an installation");
         string root = Path.Combine(fixture, "Installed app with spaces – Unicode");
-        var integration = new WindowsIntegration("ExperimentDesigner.Test-" + Guid.NewGuid().ToString("N"), Path.Combine(fixture, "Programs"), Path.Combine(fixture, "Desktop"));
+        string testRegistry = "ExperimentDesigner.Test-" + Guid.NewGuid().ToString("N");
+        string testPrograms = Path.Combine(fixture, "Programs"), testDesktop = Path.Combine(fixture, "Desktop");
+        var integration = new WindowsIntegration(testRegistry, testPrograms, testDesktop);
         var receipt = Installation.Install(package, root);
         try
         {
@@ -199,6 +255,31 @@ internal sealed class WindowsIntegration(string registryName, string programs, s
             bool refused = false; try { integration.Register(package, root, updated, false); } catch (IOException) { refused = true; }
             Check(refused && !OwnsLink(integration.StartLink, root), "Foreign shortcut is preserved rather than overwritten");
             WithLink(integration.StartLink, link => { link.TargetPath = Installation.Executable(root, updated); link.Save(); });
+            // Maintenance records written before the wizard omit these optional fields.
+            string maintenancePath = Path.Combine(root, "Installer", RecordName);
+            string currentRecord = File.ReadAllText(maintenancePath);
+            var legacy = System.Text.Json.Nodes.JsonNode.Parse(currentRecord)!.AsObject();
+            legacy.Remove("MenuFolder"); legacy.Remove("Language");
+            File.WriteAllText(maintenancePath, legacy.ToJsonString());
+            Check(Preferences(root) == ("Experiment Designer", "en"), "Legacy maintenance records retain default shortcuts and English");
+            File.WriteAllText(maintenancePath, currentRecord);
+            var custom = new WindowsIntegration(testRegistry, testPrograms, testDesktop, "Research tools", "es-MX");
+            custom.Register(package, root, updated, false);
+            Check(File.Exists(custom.StartLink) && !File.Exists(integration.StartLink), "Custom Start Menu folder replaces the owned previous shortcut");
+            Check(Preferences(root) == ("Research tools", "es-MX"), "Chosen shortcut folder and Mexican Spanish are persisted");
+            var caseOnly = new WindowsIntegration(testRegistry, testPrograms, testDesktop, "research TOOLS", "es-MX");
+            caseOnly.Register(package, root, updated, false);
+            Check(File.Exists(custom.StartLink), "Changing only folder letter case preserves the shortcut");
+            var withoutMenu = new WindowsIntegration(testRegistry, testPrograms, testDesktop, "", "es-ES");
+            withoutMenu.Register(package, root, updated, false);
+            Check(!File.Exists(custom.StartLink) && Preferences(root) == ("", "es-ES"), "Disabling Start Menu removes the previous owned shortcut");
+            integration.Register(package, root, updated, false);
+            foreach (string invalid in new[] { "../outside", @"C:\outside", "CON", "bad.", "bad ", @"Research\..\outside" })
+            {
+                bool rejected = false;
+                try { ValidateMenuFolder(invalid); } catch (ArgumentException) { rejected = true; }
+                Check(rejected, "Invalid Start Menu folder is rejected: " + invalid);
+            }
             File.WriteAllText(Path.Combine(root, "retain-study.poultryproj"), "user study");
             File.WriteAllText(Path.Combine(root, "Installer", "keep.txt"), "unknown maintenance file");
             // Invoke the exact registered bootstrap without the original ZIP or a global runtime.

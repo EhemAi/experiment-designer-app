@@ -17,7 +17,7 @@ internal sealed class ReportPrinting : IDisposable
     private const float Left = 36, Width = 720, Top = 172, Bottom = 562, Line = 13;
     internal ReportPrinting(AllocationReport source)
     {
-        report = AllocationReports.Printable(source);
+        report = ReportLanguage.Display(AllocationReports.Printable(source));
         using var bitmap = new Bitmap(1584, 1224); bitmap.SetResolution(144, 144); using var g = Graphics.FromImage(bitmap); g.PageUnit = GraphicsUnit.Point;
         foreach (var table in report.Tables)
         {
@@ -25,7 +25,7 @@ internal sealed class ReportPrinting : IDisposable
             int headerLines = headers.Max(x => x.Length); float y = Top;
             PrintedPage page = NewPage();
             PrintedPage NewPage() { var next = new PrintedPage(table, []); Pages.Add(next); next.Rows.Add(new(headers, 0, headerLines, true, false)); y = Top + headerLines * Line + 12; return next; }
-            if (table.Rows.IsEmpty) page.Rows.Add(new([new[] { "No records for this revision." }], 0, 1, false, false));
+            if (table.Rows.IsEmpty) page.Rows.Add(new([new[] { AppText.T("No records for this revision.") }], 0, 1, false, false));
             foreach (var row in table.Rows)
             {
                 var cells = row.Select((v, i) => Wrap(g, AllocationReports.PrintedText(v), body, widths[i] - 12)).ToArray();
@@ -43,7 +43,7 @@ internal sealed class ReportPrinting : IDisposable
     }
     private static float[] Widths(ReportTable t)
     {
-        if (t.Name == "Summary") return [190, 530];
+        if (t.Name == AppText.T("Summary")) return [190, 530];
         double[] weights = t.Columns.Select(c => c.Name.Contains("location", StringComparison.OrdinalIgnoreCase) ? 2.0
             : c.Name.Contains("reason", StringComparison.OrdinalIgnoreCase) || c.Name.Contains("SHA") ? 2.4 : c.Name.Contains("ID") || c.Name == "Label" || c.Name.Contains("label") ? 1.3 : 1).ToArray();
         return weights.Select(x => (float)(Width * x / weights.Sum())).ToArray();
@@ -80,9 +80,9 @@ internal sealed class ReportPrinting : IDisposable
         using var band = new SolidBrush(Color.FromArgb(32, 35, 38)); using var teal = new SolidBrush(Color.FromArgb(66, 158, 132)); using var white = new SolidBrush(Color.White);
         using var pale = new SolidBrush(Color.FromArgb(244, 246, 246)); using var rule = new Pen(Color.FromArgb(218, 223, 225), 0.5f);
         g.FillRectangle(teal, Left, 24, 3, 25);
-        g.DrawString("Allocation report", title, ink, new RectangleF(Left + 12, 25, Width - 12, 30));
+        g.DrawString(AppText.T("Allocation report"), title, ink, new RectangleF(Left + 12, 25, Width - 12, 30));
         float contextY = 59; foreach (string line in Wrap(g, report.Context, body, Width)) { g.DrawString(line, body, muted, Left, contextY, StringFormat.GenericTypographic); contextY += Line; }
-        g.DrawString("Exported UTC " + report.GeneratedUtc.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss"), body, muted, Left, contextY, StringFormat.GenericTypographic);
+        g.DrawString(AppText.T("Exported UTC ") + report.GeneratedUtc.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss"), body, muted, Left, contextY, StringFormat.GenericTypographic);
         g.DrawString(page.Table.Name, heading, ink, Left, 98, StringFormat.GenericTypographic);
         float descriptionY = 123; foreach (string line in Wrap(g, page.Table.Description, body, Width)) { g.DrawString(line, body, muted, Left, descriptionY, StringFormat.GenericTypographic); descriptionY += Line; }
         float y = Top; int stripe = 0;
@@ -103,7 +103,7 @@ internal sealed class ReportPrinting : IDisposable
             y += height; g.DrawLine(rule, Left, y, Left + Width, y);
         }
         g.DrawLine(rule, Left, 578, Left + Width, 578); g.DrawString("EXPERIMENT / ED", body, muted, Left, 585);
-        g.DrawString($"Page {index + 1} of {Pages.Count}", body, muted, new RectangleF(Left, 585, Width, 15), new StringFormat { Alignment = StringAlignment.Far });
+        g.DrawString(AppText.T($"Page {index + 1} of {Pages.Count}"), body, muted, new RectangleF(Left, 585, Width, 15), new StringFormat { Alignment = StringAlignment.Far });
     }
     internal PrintDocument Document()
     {

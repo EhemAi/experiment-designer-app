@@ -71,7 +71,7 @@ internal sealed class ReportDialog : Form
         string safe = string.Concat(report.Title.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)); if (safe.Length > 90) safe = safe[..90];
         using var dialog = new SaveFileDialog
         {
-            Filter = excel ? "Excel workbook|*.xlsx" : "Printable report|*.html",
+            Filter = AppText.T(excel ? "Excel workbook|*.xlsx" : "Printable report|*.html"),
             DefaultExt = excel ? "xlsx" : "html",
             AddExtension = true,
             OverwritePrompt = true,

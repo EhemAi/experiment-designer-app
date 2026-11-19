@@ -69,6 +69,7 @@ internal sealed class SwapDialog : Form
         var selected = chosen.Input.Inputs.Study.SelectedRecordIds.ToHashSet();
         var animals = chosen.Input.Inputs.Study.Pool.Where(x => selected.Contains(x.RecordId)).OrderBy(x => x.AnimalId, StringComparer.Ordinal)
             .Select(x => new AnimalOption(x.RecordId, $"{x.AnimalId} • {x.Cohort} • record {x.RecordId}")).ToArray();
+        ((DesktopComboBox)first).TranslateItems = ((DesktopComboBox)second).TranslateItems = true;
         first.Items.AddRange(animals.Cast<object>().ToArray()); second.Items.AddRange(animals.Cast<object>().ToArray()); first.Width = second.Width = 460;
         apply = Ui.Button("Apply previewed swap", () => DialogResult = DialogResult.OK); ((StyledButton)apply).Primary = true; apply.Enabled = false;
         void InvalidatePreview() { apply.Enabled = false; message.Text = "Selection or reason changed. Preview again before applying."; }

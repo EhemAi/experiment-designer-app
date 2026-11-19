@@ -51,7 +51,7 @@ internal sealed class ImportDialog : SourceDialog
     private readonly Label message = Ui.Label("Choose the source sheet, exact rows and columns. Preview before applying.");
     private bool refreshing, working;
     private readonly ProgressBar busyIndicator = new() { Style = ProgressBarStyle.Marquee, Width = 64, Height = 8, Visible = false };
-    private sealed record ColumnOption(int Number, string Caption) { public override string ToString() => Caption; }
+    private sealed record ColumnOption(int Number, string Caption) { public override string ToString() => Number == 0 ? PoultryDesigner.AppCore.AppText.T(Caption) : Caption; }
     internal AnimalImport? AnimalBatch { get; private set; }
     internal TreatmentImport? TreatmentBatch { get; private set; }
     internal bool Append => append.Checked;
@@ -68,7 +68,7 @@ internal sealed class ImportDialog : SourceDialog
             DialogResult = DialogResult.OK;
         }); ((StyledButton)apply).Primary = true; apply.Enabled = false;
         inspect = Ui.Button("Validate and preview", () => _ = ValidateAsync());
-        var mappings = new TableLayoutPanel { Dock = DockStyle.Top, Height = 88, ColumnCount = animal ? 8 : 6, RowCount = 1, Margin = Padding.Empty };
+        var mappings = new TableLayoutPanel { Dock = DockStyle.Top, Height = 104, ColumnCount = animal ? 8 : 6, RowCount = 1, Margin = Padding.Empty };
         mappings.RowStyles.Add(new(SizeType.Percent, 100));
         for (int i = 0; i < mappings.ColumnCount; i++) mappings.ColumnStyles.Add(new(SizeType.Percent, 100f / mappings.ColumnCount));
         foreach (string name in animal ? new[] { "Animal ID", "BW", "Cohort", "Old location", "Maternal ID", "Paternal ID", "Notes", "Sex" } : new[] { "Treatment ID", "Label", "Factor 1", "Factor 2", "Factor 3", "Factor 4" })
@@ -76,7 +76,7 @@ internal sealed class ImportDialog : SourceDialog
             var combo = Ui.Combo([]); combo.Dock = DockStyle.Top; fields.Add(name, combo);
             var field = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new(4) };
             field.ColumnStyles.Add(new(SizeType.Percent, 100));
-            field.RowStyles.Add(new(SizeType.Absolute, 30)); field.RowStyles.Add(new(SizeType.Percent, 100));
+            field.RowStyles.Add(new(SizeType.Absolute, 44)); field.RowStyles.Add(new(SizeType.Percent, 100));
             var label = Ui.Label(!animal && name == "Label" ? "Label (optional)" : name); label.Font = Theme.Body(8.5f, FontStyle.Bold);
             label.AutoSize = false; label.Dock = DockStyle.Fill; label.Margin = new(4, 4, 4, 0);
             field.Controls.Add(label, 0, 0); field.Controls.Add(combo, 0, 1); mappings.Controls.Add(field, mappings.Controls.Count, 0);
@@ -118,12 +118,12 @@ internal sealed class ImportDialog : SourceDialog
                 combo.Items.Clear(); bool required = field is "Animal ID" or "BW" or "Treatment ID";
                 if (!required) combo.Items.Add(new ColumnOption(0, "(unmapped)"));
                 for (int column = 1; column <= max; column++)
-                    combo.Items.Add(new ColumnOption(column, $"{column}: {cells.SingleOrDefault(x => x.Column == column)?.Value ?? "(no header)"}"));
+                    combo.Items.Add(new ColumnOption(column, $"{column}: {cells.SingleOrDefault(x => x.Column == column)?.Value ?? PoultryDesigner.AppCore.AppText.T("(no header)")}"));
                 combo.SelectedIndex = required ? -1 : 0;
                 if (field == "Sex")
                 {
                     var sexHeader = cells.FirstOrDefault(c => c.Value.Trim().Equals("Sex", StringComparison.OrdinalIgnoreCase)
-                        || c.Value.Trim().Equals("Gender", StringComparison.OrdinalIgnoreCase));
+                        || c.Value.Trim().Equals("Gender", StringComparison.OrdinalIgnoreCase) || c.Value.Trim().Equals("Sexo", StringComparison.OrdinalIgnoreCase));
                     if (sexHeader is not null) combo.SelectedItem = combo.Items.Cast<ColumnOption>().Single(c => c.Number == sexHeader.Column);
                 }
             }
@@ -185,8 +185,8 @@ internal sealed class ImportDialog : SourceDialog
             }
             apply.Enabled = issues.IsEmpty && (AnimalBatch is not null || TreatmentBatch is not null);
             if (!issues.IsEmpty) preview.SetRows(["Source row", "Field", "Problem"], issues.Length, i => [issues[i].Row, issues[i].Field, issues[i].Message]);
-            message.Text = apply.Enabled ? $"{(demonstration ? "DEMONSTRATION DATA • " : "")}{AnimalBatch?.Animals.Length ?? TreatmentBatch!.Treatments.Length:N0} valid records. Review the preview tab. " + (animal ? "Heaviest animals will be selected automatically; unused animals become EX." : "Treatment order and source provenance are retained.")
-                : $"{issues.Length:N0} invalid records. Correct the source or mapping. Nothing has been imported.";
+            message.Text = apply.Enabled ? $"{(demonstration ? "DEMONSTRATION DATA • " : "")}Valid records: {AnimalBatch?.Animals.Length ?? TreatmentBatch!.Treatments.Length:N0}. Review the preview tab. " + (animal ? "Heaviest animals will be selected automatically; unused animals become EX." : "Treatment order and source provenance are retained.")
+                : $"Invalid records: {issues.Length:N0}. Correct the source or mapping. Nothing has been imported.";
         }
         catch (Exception ex) { message.Text = ex.Message; AnimalBatch = null; TreatmentBatch = null; apply.Enabled = false; }
         finally
